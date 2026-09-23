@@ -172,12 +172,13 @@
     });
     await worker.setParameters({ tessedit_pageseg_mode: '10' }); // 单字符模式
 
-    // 识别单个格子，返回 {digit, conf}
+    // 识别单个格子，返回 {digit, conf, raw}
     async function recognizeCell(canvas) {
       var od = await worker.recognize(canvas);
       var conf = Math.round(od.data.confidence || 0);
-      var m = (od.data.text || '').replace(/[^1-9]/g, '');
-      return { digit: m ? m[m.length - 1] : '', conf: conf };
+      var raw = (od.data.text || '').trim();
+      var m = raw.replace(/[^1-9]/g, '');
+      return { digit: m ? m[m.length - 1] : '', conf: conf, raw: raw };
     }
 
     var result = '';
@@ -220,7 +221,7 @@
             if (best.conf >= 28 && best.digit) {
               result += best.digit;
             } else {
-              console.log('[OCR] r' + r + 'c' + c + ' 识别=' + (best.digit || '空') + ' 置信度=' + best.conf + '（判空）');
+              console.log('[OCR] r' + r + 'c' + c + ' 原文="' + best.raw + '" 置信度=' + best.conf + '（判空）');
               result += '0';
             }
           } catch (e) {
