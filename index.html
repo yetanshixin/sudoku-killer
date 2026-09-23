@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#6366f1">
+  <title>数独求解器</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div class="header-title">
+        <h1>数独求解器</h1>
+        <p class="subtitle">输入已知数字 · 一键求解或逐步推理 · 自动判定唯一解</p>
+      </div>
+      <div class="top-actions">
+        <button id="btnCheck" class="icon-btn" title="检查唯一解">
+          <svg class="icon-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor"/></svg>
+          <svg class="icon-cross" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/></svg>
+        </button>
+        <button id="btnTogglePencil" class="icon-btn" title="显示/隐藏小数字">
+          <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+          </svg>
+        </button>
+        <button id="btnFav" class="icon-btn" title="收藏">
+          <svg viewBox="0 0 24 24"><path class="star" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="status-card" id="statusCard" hidden>
+      <span class="status-icon" id="statusIcon"></span>
+      <div class="status-text" id="statusText"></div>
+    </section>
+
+    <section class="board-wrapper">
+      <div class="board" id="board"></div>
+    </section>
+
+    <section class="explanation" id="explanation" hidden>
+      <div class="explanation-head">
+        <span class="explanation-badge" id="explBadge">技巧</span>
+        <span class="explanation-title" id="explTitle"></span>
+      </div>
+      <p class="explanation-text" id="explText"></p>
+    </section>
+
+    <section class="controls">
+      <div class="control-group control-group-row">
+        <button id="btnStep" class="btn btn-primary">下一步</button>
+        <button id="btnSolve" class="btn btn-primary">一键求解</button>
+      </div>
+      <div class="control-group control-group-row">
+        <button id="btnUndo" class="btn btn-secondary" disabled>上一步</button>
+        <button id="btnReset" class="btn btn-secondary" disabled>返回初始</button>
+      </div>
+      <div class="control-group control-group-row">
+        <button id="btnEdit" class="btn btn-secondary" disabled>编辑</button>
+        <button id="btnLibrary" class="btn btn-secondary">记录</button>
+        <button id="btnClear" class="btn btn-danger-ghost">清空</button>
+      </div>
+    </section>
+
+    <section class="input-bar">
+      <div class="paste-group">
+        <input type="text" id="pasteInput" class="paste-input"
+               placeholder="粘贴 81 位数字（0 代表空格）" inputmode="numeric" autocomplete="off">
+        <button id="pasteBtn" class="btn btn-secondary">载入</button>
+        <button id="exportBtn" class="btn btn-secondary">导出</button>
+        <button id="btnOCR" class="icon-btn" title="识别图片">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <dialog id="helpDialog">
+      <div class="dialog-head">
+        <span class="dialog-title">求解技巧说明</span>
+        <button class="dialog-close" id="helpDialogClose" title="关闭">×</button>
+      </div>
+      <div class="dialog-body help-body">
+        <section class="help-group">
+          <h3 class="help-group-title">一、基础技巧</h3>
+          <div class="help-item"><b>唯一候选数</b>：某空格只剩一个候选数字，直接填入。</div>
+          <div class="help-item"><b>隐性唯一</b>：某数字在某行/列/宫中只能放在唯一一个位置，填入该位置。</div>
+          <div class="help-item"><b>显性数对</b>：两个格子候选完全相同且只有两个数字，排除同单元其他格子的这两个数字。</div>
+          <div class="help-item"><b>隐性数对</b>：两个数字在某单元中只能放在同样的两个格子，排除这两个格子的其他候选。</div>
+          <div class="help-item"><b>区块摒除</b>：某数字在某宫中只能出现在同一行/列，排除该行/列其他宫的该数字。</div>
+          <div class="help-item"><b>区块交互</b>：某数字在某行/列中只能出现在某宫，排除该宫其他行/列的该数字。</div>
+          <div class="help-item"><b>显性三数组</b>：三个格子的候选并集恰好三个数字，排除同单元其他格子的这三个数字。</div>
+          <div class="help-item"><b>显性四数组</b>：四个格子的候选并集恰好四个数字，排除同单元其他格子的这四个数字。</div>
+          <div class="help-item"><b>隐性三数组</b>：三个数字在某单元中只能放在同样的三个格子，排除这三个格子的其他候选。</div>
+        </section>
+        <section class="help-group">
+          <h3 class="help-group-title">二、鱼类技巧</h3>
+          <div class="help-item"><b>X-Wing</b>：某数字在两行中恰好各有两个相同候选列，排除这两列其他行的该数字。</div>
+          <div class="help-item"><b>Swordfish</b>：X-Wing 的三行三列版本——某数字在三行中候选集中在同样三列。</div>
+          <div class="help-item"><b>Jellyfish</b>：X-Wing 的四行四列版本——某数字在四行中候选集中在同样四列。</div>
+        </section>
+        <section class="help-group">
+          <h3 class="help-group-title">三、链式技巧</h3>
+          <div class="help-item"><b>XY-Wing</b>：以候选 {X,Y} 的格子为枢纽，两翼分别为 {X,Z} 与 {Y,Z}，排除同时看到两翼的格子的 Z。</div>
+          <div class="help-item"><b>XYZ-Wing</b>：XY-Wing 的扩展，枢纽格有 {X,Y,Z} 三个候选。</div>
+          <div class="help-item"><b>W-Wing</b>：两个候选相同的双值格通过某数字的强连接相连，排除同时看到两者的候选。</div>
+          <div class="help-item"><b>Remote Pairs</b>：候选 {X,Y} 的格子沿链交替，偶数长度链两端一 X 一 Y，排除看到两端的 X、Y。</div>
+          <div class="help-item"><b>XY-Chain</b>：双值格沿强连接成链，链两端必有一个为某候选，排除同时看到两端的该候选。</div>
+          <div class="help-item"><b>X-Chain</b>：单数字沿强连接着色（红绿），同色冲突或红绿可见时排除该数字。</div>
+        </section>
+        <section class="help-group">
+          <h3 class="help-group-title">四、唯一性技巧（依赖唯一解）</h3>
+          <div class="help-item"><b>唯一矩形</b>：四格矩形中三格 {X,Y}、一格 {X,Y,Z}，为避免产生多解，第四格不能是 X 或 Y。</div>
+          <div class="help-item"><b>BUG +1</b>：除一格外所有空格都是双值，该格必须填"在行/列/宫都出现三次"的那个数字。</div>
+        </section>
+        <p class="help-note">提示：逐步求解按技巧难度依次尝试；遇到需要「试错（猜数）」的极难题时，会如实提示而不会硬猜。</p>
+      </div>
+    </dialog>
+
+    <dialog id="libraryDialog">
+      <div class="dialog-head">
+        <div class="dialog-tabs">
+          <button class="dialog-tab active" data-lib="history">历史记录</button>
+          <button class="dialog-tab" data-lib="favorites">收藏夹</button>
+        </div>
+        <button class="dialog-close" id="dialogClose" title="关闭">×</button>
+      </div>
+      <div class="dialog-body">
+        <div class="library-panel" id="historyPanel"></div>
+        <div class="library-panel" id="favoritesPanel" hidden></div>
+      </div>
+    </dialog>
+
+    <footer class="app-footer">
+      0 或留空代表空格 · 支持粘贴 81 位数字快速载入
+      <button id="btnHelp" class="help-link">查看求解技巧说明</button>
+    </footer>
+  </div>
+
+  <input type="file" id="ocrFileInput" accept="image/*" hidden>
+
+  <script src="solver.js"></script>
+  <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="ocr.js"></script>
+</body>
+</html>
