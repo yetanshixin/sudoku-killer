@@ -158,6 +158,7 @@
 
     var hLines = findLines(binary, w, h, 'h');
     var vLines = findLines(binary, w, h, 'v');
+    console.log('[OCR调试] 尺寸:', w, 'x', h, '| 水平线', hLines.length, ':', hLines.join(','), '| 垂直线', vLines.length, ':', vLines.join(','));
     if (hLines.length < 10 || vLines.length < 10) {
       throw new Error('未能检测到完整网格，请上传清晰的数独截图（9×9 网格完整可见）');
     }
@@ -198,6 +199,7 @@
           }
         }
         if (total === 0 || dark / total < 0.003) {
+          if (dark > 0) console.log('[OCR] r' + r + 'c' + c + ' 暗像素占比 ' + (dark / total * 100).toFixed(2) + '%（hasDigit判空）');
           result += '0';  // 空格
         } else {
           // 用原图放大识别（之前实测效果最好），不做二值化预处理
@@ -218,6 +220,7 @@
             if (best.conf >= 28 && best.digit) {
               result += best.digit;
             } else {
+              console.log('[OCR] r' + r + 'c' + c + ' 识别=' + (best.digit || '空') + ' 置信度=' + best.conf + '（判空）');
               result += '0';
             }
           } catch (e) {
@@ -227,6 +230,7 @@
       }
     }
     await worker.terminate();
+    console.log('[OCR调试] 识别结果(81位):', result);
     return result;
   }
 
