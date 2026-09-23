@@ -171,6 +171,14 @@
     });
     await worker.setParameters({ tessedit_pageseg_mode: '10' }); // 单字符模式
 
+    // 识别单个格子，返回 {digit, conf}
+    async function recognizeCell(canvas) {
+      var od = await worker.recognize(canvas);
+      var conf = Math.round(od.data.confidence || 0);
+      var m = (od.data.text || '').replace(/[^1-9]/g, '');
+      return { digit: m ? m[m.length - 1] : '', conf: conf };
+    }
+
     var result = '';
     for (var r = 0; r < 9; r++) {
       for (var c = 0; c < 9; c++) {
@@ -189,7 +197,7 @@
             if (binary[y * w + x]) dark++;
           }
         }
-        if (total === 0 || dark / total < 0.005) {
+        if (total === 0 || dark / total < 0.003) {
           result += '0';  // 空格
         } else {
           // 用原图放大识别（之前实测效果最好），不做二值化预处理
@@ -201,12 +209,14 @@
           cctx.fillRect(0, 0, 128, 128);
           cctx.drawImage(loaded.canvas, x0, y0, x1 - x0, y1 - y0, 8, 8, 112, 112);
           try {
-            var od = await worker.recognize(cellCanvas);
-            var conf = Math.round(od.data.confidence || 0);
-            var m = (od.data.text || '').replace(/[^1-9]/g, '');
-            // 置信度不足时宁可漏（空格）也不输出没把握的数字，避免错识别
-            if (conf >= 28 && m) {
-              result += m[m.length - 1];
+            var best = await recognizeCell(cellCanvas);
+            // 置信度不足时重试一次，取置信度更高的结果
+            if (!(best.conf >= 28 && best.digit)) {
+              var retry = await recognizeCell(cellCanvas);
+              if (retry.conf > best.conf) best = retry;
+            }
+            if (best.conf >= 28 && best.digit) {
+              result += best.digit;
             } else {
               result += '0';
             }
