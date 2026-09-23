@@ -129,6 +129,7 @@
 
     var hLines = findLines(binary, w, h, 'h');
     var vLines = findLines(binary, w, h, 'v');
+    console.log('[OCR调试] 图片尺寸:', w, 'x', h, '| 水平线', hLines.length, '条:', hLines.join(','), '| 垂直线', vLines.length, '条:', vLines.join(','));
     if (hLines.length < 10 || vLines.length < 10) {
       throw new Error('未能检测到完整网格，请上传清晰的数独截图（9×9 网格完整可见）');
     }
@@ -182,6 +183,7 @@
       }
     }
     await worker.terminate();
+    console.log('[OCR调试] 识别结果(81位):', result);
     return result;
   }
 
