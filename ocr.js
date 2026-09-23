@@ -119,8 +119,8 @@
 
     var worker = await Tesseract.createWorker('eng', 1, {
       workerPath: 'lib/worker.min.js',
-      corePath: 'lib/core',
-      langPath: 'lib/lang'
+      corePath: 'lib/core/',
+      langPath: 'lib/lang/'
     });
     await worker.setParameters({ tessedit_pageseg_mode: '10' }); // 单字符模式
 
