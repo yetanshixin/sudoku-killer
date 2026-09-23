@@ -80,6 +80,35 @@
     return bin;
   }
 
+  // 提取格子并二值化，生成白底黑字的清晰数字图（去网格线/去噪，提高识别率）
+  function makeCellCanvas(gray, w, x0, y0, x1, y1) {
+    var cw = x1 - x0, ch = y1 - y0;
+    var canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    var ctx = canvas.getContext('2d');
+    var imgData = ctx.createImageData(128, 128);
+    for (var i = 0; i < 128 * 128; i++) {
+      imgData.data[i * 4] = 255; imgData.data[i * 4 + 1] = 255;
+      imgData.data[i * 4 + 2] = 255; imgData.data[i * 4 + 3] = 255;
+    }
+    var sx = 128 / cw, sy = 128 / ch;
+    for (var y = y0; y < y1; y++) {
+      for (var x = x0; x < x1; x++) {
+        if (gray[y * w + x] < 128) {
+          var dx = Math.round((x - x0) * sx);
+          var dy = Math.round((y - y0) * sy);
+          if (dx >= 0 && dx < 128 && dy >= 0 && dy < 128) {
+            var pi = (dy * 128 + dx) * 4;
+            imgData.data[pi] = 0; imgData.data[pi + 1] = 0; imgData.data[pi + 2] = 0;
+          }
+        }
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
+  }
+
   // 投影法找网格线位置：网格线须「覆盖率高 且 贯穿整行/列」（连续暗段长），排除数字行的干扰
   function findLines(binary, w, h, axis) {
     var n = axis === 'h' ? h : w;
@@ -158,20 +187,13 @@
         for (var y = y0; y < y1; y++) {
           for (var x = x0; x < x1; x++) {
             total++;
-            if (binary[y * w + x]) dark++;
+            if (gray[y * w + x] < 150) dark++;
           }
         }
-        if (total === 0 || dark / total < 0.01) {
+        if (total === 0 || dark / total < 0.02) {
           result += '0';  // 空格
         } else {
-          // 提取该格并放大到 128×128，识别单个数字
-          var cellCanvas = document.createElement('canvas');
-          cellCanvas.width = 128;
-          cellCanvas.height = 128;
-          var cctx = cellCanvas.getContext('2d');
-          cctx.fillStyle = '#fff';
-          cctx.fillRect(0, 0, 128, 128);
-          cctx.drawImage(loaded.canvas, x0, y0, x1 - x0, y1 - y0, 8, 8, 112, 112);
+          var cellCanvas = makeCellCanvas(gray, w, x0, y0, x1, y1);
           try {
             var od = await worker.recognize(cellCanvas);
             var m = (od.data.text || '').replace(/[^1-9]/g, '');
