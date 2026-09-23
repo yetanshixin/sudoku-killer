@@ -61,21 +61,39 @@
     return bin;
   }
 
-  // 投影法找网格线位置：每行/列统计最长连续暗段，超过宽度 40% 视为网格线
+  // 自适应二值化：对比度增强 + 自动判断浅色/深色背景，宽松阈值捕捉浅灰网格线
+  function binarizeAdaptive(gray) {
+    var min = 255, max = 0, sum = 0;
+    for (var i = 0; i < gray.length; i++) {
+      var g = gray[i];
+      if (g < min) min = g;
+      if (g > max) max = g;
+      sum += g;
+    }
+    var light = (sum / gray.length) > 128;   // true=浅色背景（深色线）
+    var range = max - min;
+    var bin = new Uint8Array(gray.length);
+    for (var j = 0; j < gray.length; j++) {
+      var g = range > 10 ? Math.round((gray[j] - min) * 255 / range) : gray[j];
+      bin[j] = light ? (g < 235 ? 1 : 0) : (g > 20 ? 1 : 0);
+    }
+    return bin;
+  }
+
+  // 投影法找网格线位置：每行/列统计暗像素覆盖率，超过 25% 视为网格线
   function findLines(binary, w, h, axis) {
     var n = axis === 'h' ? h : w;
     var len = axis === 'h' ? w : h;
     var profile = new Array(n);
     for (var i = 0; i < n; i++) {
-      var maxRun = 0, run = 0;
+      var dark = 0;
       for (var j = 0; j < len; j++) {
         var idx = axis === 'h' ? i * w + j : j * w + i;
-        if (binary[idx]) { run++; if (run > maxRun) maxRun = run; }
-        else run = 0;
+        if (binary[idx]) dark++;
       }
-      profile[i] = maxRun;
+      profile[i] = dark;
     }
-    var threshold = len * 0.4;
+    var threshold = len * 0.25;
     var positions = [];
     var cluster = [];
     for (var k = 0; k < n; k++) {
@@ -105,9 +123,7 @@
     var loaded = loadImage(image);
     var w = loaded.w, h = loaded.h;
     var gray = toGray(loaded.data);
-    var th = otsu(gray);
-    if (th < 5 || th > 250) th = 128;  // 纯黑白图兜底
-    var binary = binarize(gray, th);
+    var binary = binarizeAdaptive(gray);
 
     var hLines = findLines(binary, w, h, 'h');
     var vLines = findLines(binary, w, h, 'v');
