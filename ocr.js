@@ -95,7 +95,7 @@
     var sx = 128 / cw, sy = 128 / ch;
     for (var y = y0; y < y1; y++) {
       for (var x = x0; x < x1; x++) {
-        if (gray[y * w + x] < 128) {
+        if (gray[y * w + x] < 200) {
           var dx = Math.round((x - x0) * sx);
           var dy = Math.round((y - y0) * sy);
           if (dx >= 0 && dx < 128 && dy >= 0 && dy < 128) {
@@ -187,10 +187,10 @@
         for (var y = y0; y < y1; y++) {
           for (var x = x0; x < x1; x++) {
             total++;
-            if (gray[y * w + x] < 150) dark++;
+            if (gray[y * w + x] < 200) dark++;
           }
         }
-        if (total === 0 || dark / total < 0.02) {
+        if (total === 0 || dark / total < 0.01) {
           result += '0';  // 空格
         } else {
           var cellCanvas = makeCellCanvas(gray, w, x0, y0, x1, y1);
