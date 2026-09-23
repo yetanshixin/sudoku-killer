@@ -209,6 +209,7 @@
             if (conf >= 60 && m) {
               result += m[m.length - 1];
             } else {
+              if (m && conf > 0) console.log('[OCR] r' + r + 'c' + c + ' 识别=' + m + ' 置信度=' + conf + '（已过滤）');
               result += '0';
             }
           } catch (e) {
