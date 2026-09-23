@@ -117,7 +117,11 @@
     var hs = pick(hLines, 10);
     var vs = pick(vLines, 10);
 
-    var worker = await Tesseract.createWorker('eng');
+    var worker = await Tesseract.createWorker('eng', 1, {
+      workerPath: 'lib/worker.min.js',
+      corePath: 'lib/core',
+      langPath: 'lib/lang'
+    });
     await worker.setParameters({ tessedit_pageseg_mode: '10' }); // 单字符模式
 
     var result = '';
