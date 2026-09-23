@@ -80,20 +80,22 @@
     return bin;
   }
 
-  // 投影法找网格线位置：每行/列统计暗像素覆盖率，超过 25% 视为网格线
+  // 投影法找网格线位置：网格线须「覆盖率高 且 贯穿整行/列」（连续暗段长），排除数字行的干扰
   function findLines(binary, w, h, axis) {
     var n = axis === 'h' ? h : w;
     var len = axis === 'h' ? w : h;
     var profile = new Array(n);
     for (var i = 0; i < n; i++) {
-      var dark = 0;
+      var dark = 0, maxRun = 0, run = 0;
       for (var j = 0; j < len; j++) {
         var idx = axis === 'h' ? i * w + j : j * w + i;
-        if (binary[idx]) dark++;
+        if (binary[idx]) { dark++; run++; if (run > maxRun) maxRun = run; }
+        else run = 0;
       }
-      profile[i] = dark;
+      // 网格线：暗像素覆盖率 > 20% 且 最长连续段 > 35%（贯穿性，数字不满足）
+      profile[i] = (dark > len * 0.2 && maxRun > len * 0.35) ? dark : 0;
     }
-    var threshold = len * 0.25;
+    var threshold = len * 0.2;
     var positions = [];
     var cluster = [];
     for (var k = 0; k < n; k++) {
