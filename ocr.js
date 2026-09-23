@@ -145,9 +145,9 @@
       for (var c = 0; c < 9; c++) {
         var top = hs[r], bottom = hs[r + 1];
         var left = vs[c], right = vs[c + 1];
-        // 中心区域（避开网格线）
-        var mx = Math.max(1, Math.round((right - left) * 0.12));
-        var my = Math.max(1, Math.round((bottom - top) * 0.12));
+        // 中心区域（小幅缩进，避开网格线但不截断数字）
+        var mx = Math.max(1, Math.round((right - left) * 0.06));
+        var my = Math.max(1, Math.round((bottom - top) * 0.06));
         var x0 = left + mx, x1 = right - mx;
         var y0 = top + my, y1 = bottom - my;
 
@@ -158,21 +158,21 @@
             if (binary[y * w + x]) dark++;
           }
         }
-        if (total === 0 || dark / total < 0.03) {
+        if (total === 0 || dark / total < 0.01) {
           result += '0';  // 空格
         } else {
-          // 提取该格并放大到 64×64，识别单个数字
+          // 提取该格并放大到 128×128，识别单个数字
           var cellCanvas = document.createElement('canvas');
-          cellCanvas.width = 64;
-          cellCanvas.height = 64;
+          cellCanvas.width = 128;
+          cellCanvas.height = 128;
           var cctx = cellCanvas.getContext('2d');
           cctx.fillStyle = '#fff';
-          cctx.fillRect(0, 0, 64, 64);
-          cctx.drawImage(loaded.canvas, x0, y0, x1 - x0, y1 - y0, 4, 4, 56, 56);
+          cctx.fillRect(0, 0, 128, 128);
+          cctx.drawImage(loaded.canvas, x0, y0, x1 - x0, y1 - y0, 8, 8, 112, 112);
           try {
             var od = await worker.recognize(cellCanvas);
-            var m = (od.data.text || '').match(/[1-9]/);
-            result += m ? m[0] : '0';
+            var m = (od.data.text || '').replace(/[^1-9]/g, '');
+            result += m ? m[m.length - 1] : '0';
           } catch (e) {
             result += '0';
           }
