@@ -206,7 +206,7 @@
             var conf = Math.round(od.data.confidence || 0);
             var m = (od.data.text || '').replace(/[^1-9]/g, '');
             // 置信度不足时宁可漏（空格）也不输出没把握的数字，避免错识别
-            if (conf >= 60 && m) {
+            if (conf >= 28 && m) {
               result += m[m.length - 1];
             } else {
               if (m && conf > 0) console.log('[OCR] r' + r + 'c' + c + ' 识别=' + m + ' 置信度=' + conf + '（已过滤）');
