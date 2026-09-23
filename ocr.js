@@ -203,8 +203,14 @@
           cctx.drawImage(loaded.canvas, x0, y0, x1 - x0, y1 - y0, 8, 8, 112, 112);
           try {
             var od = await worker.recognize(cellCanvas);
+            var conf = Math.round(od.data.confidence || 0);
             var m = (od.data.text || '').replace(/[^1-9]/g, '');
-            result += m ? m[m.length - 1] : '0';
+            // 置信度不足时宁可漏（空格）也不输出没把握的数字，避免错识别
+            if (conf >= 60 && m) {
+              result += m[m.length - 1];
+            } else {
+              result += '0';
+            }
           } catch (e) {
             result += '0';
           }
