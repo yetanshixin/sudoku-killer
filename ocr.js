@@ -170,7 +170,10 @@
       corePath: 'lib/core/',
       langPath: 'lib/lang/'
     });
-    await worker.setParameters({ tessedit_pageseg_mode: '10' }); // 单字符模式
+    await worker.setParameters({
+      tessedit_pageseg_mode: '10',
+      tessedit_char_whitelist: '123456789'
+    }); // 单字符模式 + 只识别数字
 
     // 识别单个格子，返回 {digit, conf, raw}
     async function recognizeCell(canvas) {
