@@ -187,13 +187,20 @@
         for (var y = y0; y < y1; y++) {
           for (var x = x0; x < x1; x++) {
             total++;
-            if (gray[y * w + x] < 200) dark++;
+            if (binary[y * w + x]) dark++;
           }
         }
-        if (total === 0 || dark / total < 0.01) {
+        if (total === 0 || dark / total < 0.005) {
           result += '0';  // 空格
         } else {
-          var cellCanvas = makeCellCanvas(gray, w, x0, y0, x1, y1);
+          // 用原图放大识别（之前实测效果最好），不做二值化预处理
+          var cellCanvas = document.createElement('canvas');
+          cellCanvas.width = 128;
+          cellCanvas.height = 128;
+          var cctx = cellCanvas.getContext('2d');
+          cctx.fillStyle = '#fff';
+          cctx.fillRect(0, 0, 128, 128);
+          cctx.drawImage(loaded.canvas, x0, y0, x1 - x0, y1 - y0, 8, 8, 112, 112);
           try {
             var od = await worker.recognize(cellCanvas);
             var m = (od.data.text || '').replace(/[^1-9]/g, '');
