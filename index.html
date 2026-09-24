@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7,6 +8,7 @@
   <title>数独求解器</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div class="app">
     <header class="app-header">
@@ -16,21 +18,33 @@
       </div>
       <div class="top-actions">
         <button id="btnCheck" class="icon-btn" title="检查唯一解">
-          <svg class="icon-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor"/></svg>
-          <svg class="icon-cross" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/></svg>
+          <svg class="icon-check" viewBox="0 0 24 24">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
+          </svg>
+          <svg class="icon-cross" viewBox="0 0 24 24">
+            <path
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+              fill="currentColor" />
+          </svg>
         </button>
         <button id="btnTogglePencil" class="icon-btn" title="显示/隐藏小数字">
-          <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
+          <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
           </svg>
-          <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-            <line x1="1" y1="1" x2="23" y2="23"/>
+          <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+            <line x1="1" y1="1" x2="23" y2="23" />
           </svg>
         </button>
         <button id="btnFav" class="icon-btn" title="收藏">
-          <svg viewBox="0 0 24 24"><path class="star" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg viewBox="0 0 24 24">
+            <path class="star"
+              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
         </button>
       </div>
     </header>
@@ -55,31 +69,33 @@
     <section class="controls">
       <div class="control-group control-group-row">
         <button id="btnStep" class="btn btn-primary">下一步</button>
-        <button id="btnSolve" class="btn btn-primary">一键求解</button>
+        <button id="btnSolve" class="btn btn-primary">一键全解</button>
       </div>
       <div class="control-group control-group-row">
         <button id="btnUndo" class="btn btn-secondary" disabled>上一步</button>
         <button id="btnReset" class="btn btn-secondary" disabled>返回初始</button>
       </div>
       <div class="control-group control-group-row">
-        <button id="btnEdit" class="btn btn-secondary" disabled>编辑</button>
-        <button id="btnLibrary" class="btn btn-secondary">记录</button>
-        <button id="btnClear" class="btn btn-danger-ghost">清空</button>
+        <button id="btnEdit" class="btn btn-secondary" disabled>退出推理</button>
+        <button id="btnLibrary" class="btn btn-secondary">历史/收藏</button>
+        <button id="btnClear" class="btn btn-danger-ghost">全部清空</button>
       </div>
     </section>
 
     <section class="input-bar">
       <div class="paste-group">
-        <input type="text" id="pasteInput" class="paste-input"
-               placeholder="粘贴 81 位数字（0 代表空格）" inputmode="numeric" autocomplete="off">
-        <button id="pasteBtn" class="btn btn-secondary">载入</button>
-        <button id="exportBtn" class="btn btn-secondary">导出</button>
         <button id="btnOCR" class="icon-btn" title="识别图片">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-            <circle cx="12" cy="13" r="4"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <path d="M21 15l-5-5L5 21" />
           </svg>
         </button>
+        <input type="text" id="pasteInput" class="paste-input" placeholder="粘贴 81 位数字（0 代表空格）" inputmode="numeric"
+          autocomplete="off">
+        <button id="pasteBtn" class="btn btn-secondary">载入</button>
+        <button id="exportBtn" class="btn btn-secondary">导出</button>
       </div>
     </section>
 
@@ -152,4 +168,5 @@
   <script src="lib/tesseract.min.js"></script>
   <script src="ocr.js"></script>
 </body>
+
 </html>
