@@ -502,7 +502,6 @@
   }
 
   function handleCheck() {
-    hideExplanation();
     if (isEmptyBoard()) { showStatus('warn', '请先输入或载入数独题目。'); return; }
     var status = getStatusResult();
     showStatus(status.kind, status.text);
