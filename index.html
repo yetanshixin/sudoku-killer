@@ -77,8 +77,11 @@
       </div>
       <div class="control-group control-group-row">
         <button id="btnEdit" class="btn btn-secondary" disabled>退出推理</button>
-        <button id="btnLibrary" class="btn btn-secondary">历史/收藏</button>
         <button id="btnClear" class="btn btn-danger-ghost">全部清空</button>
+      </div>
+      <div class="control-group control-group-row">
+        <button id="btnLibrary" class="btn btn-secondary">历史/收藏</button>
+        <button id="btnHelp" class="btn btn-secondary">帮助说明</button>
       </div>
     </section>
 
@@ -101,10 +104,15 @@
 
     <dialog id="helpDialog">
       <div class="dialog-head">
-        <span class="dialog-title">求解技巧说明</span>
+        <span class="dialog-title">帮助说明</span>
         <button class="dialog-close" id="helpDialogClose" title="关闭">×</button>
       </div>
       <div class="dialog-body help-body">
+        <section class="help-group">
+          <h3 class="help-group-title">使用说明</h3>
+          <div class="help-item">输入已知数字，逐步推理或一键全解，自动判定唯一解。</div>
+          <div class="help-item">0或留空代表空格，支持截图识别和粘贴81位数字快速载入。</div>
+        </section>
         <section class="help-group">
           <h3 class="help-group-title">一、基础技巧</h3>
           <div class="help-item"><b>唯一候选数</b>：某空格只剩一个候选数字，直接填入。</div>
@@ -155,11 +163,6 @@
       </div>
     </dialog>
 
-    <footer class="app-footer">
-      <p class="footer-tip">输入已知数字 逐步推理或一键全解 自动判定唯一解</p>
-      0 或留空代表空格 · 支持粘贴 81 位数字快速载入
-      <button id="btnHelp" class="help-link">查看求解技巧说明</button>
-    </footer>
   </div>
 
   <input type="file" id="ocrFileInput" accept="image/*" hidden>
