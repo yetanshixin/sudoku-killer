@@ -14,7 +14,7 @@
     <header class="app-header">
       <div class="header-title">
         <h1>数独求解器</h1>
-        <p class="subtitle">输入已知数字 逐步推理或一键全解 自动判定唯一解</p>
+        <p class="subtitle"><span class="fill-count" id="fillCount">已填 0/81</span></p>
       </div>
       <div class="top-actions">
         <button id="btnCheck" class="icon-btn" title="检查唯一解">
@@ -156,6 +156,7 @@
     </dialog>
 
     <footer class="app-footer">
+      <p class="footer-tip">输入已知数字 逐步推理或一键全解 自动判定唯一解</p>
       0 或留空代表空格 · 支持粘贴 81 位数字快速载入
       <button id="btnHelp" class="help-link">查看求解技巧说明</button>
     </footer>

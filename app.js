@@ -25,6 +25,7 @@
 
   // ===== DOM =====
   var boardEl = document.getElementById('board');
+  var fillCount = document.getElementById('fillCount');
   var statusCard = document.getElementById('statusCard');
   var statusIcon = document.getElementById('statusIcon');
   var statusText = document.getElementById('statusText');
@@ -267,6 +268,11 @@
     return SudokuSolver.computeCandidates(board);
   }
 
+  // 更新「已填格数」：只统计用户/题目给定数字（givens），不含推理/求解高亮数字
+  function updateFillCount() {
+    fillCount.textContent = '已填 ' + givens.size + '/81';
+  }
+
   function renderBoard() {
     var cands = getCandidatesForRender();
     var html = '';
@@ -304,6 +310,7 @@
     updateFavButton();
     autoCheck();
     updateEditButton();
+    updateFillCount();
   }
 
   function renderPencil(r, c, cands) {
