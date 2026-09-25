@@ -100,6 +100,8 @@
   var difficultyOptions = document.querySelectorAll('.difficulty-option');
 
   // ===== localStorage 封装 =====
+  var MAX_RECORDS = 50;   // 历史/收藏记录上限，超出裁剪最旧
+
   var Storage = {
     historyKey: 'sudoku_history',
     favKey: 'sudoku_favorites',
@@ -112,13 +114,28 @@
       } catch (e) { return []; }
     },
     set: function (key, arr) {
-      try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) {}
+      try {
+        if (arr.length > MAX_RECORDS) arr = arr.slice(0, MAX_RECORDS);
+        localStorage.setItem(key, JSON.stringify(arr));
+      } catch (e) {}
     },
     getHistory: function () { return this.get(this.historyKey); },
     setHistory: function (arr) { this.set(this.historyKey, arr); },
     getFavorites: function () { return this.get(this.favKey); },
     setFavorites: function (arr) { this.set(this.favKey, arr); }
   };
+
+  // 经典记录裁剪：超出上限时优先保留皇冠（已通关）记录，先去掉非皇冠（未通关）
+  function trimClassicRecords(arr) {
+    var sorted = arr.slice().sort(function (a, b) { return (b.savedAt || 0) - (a.savedAt || 0); });
+    var cleared = sorted.filter(function (it) { return it.cleared; });
+    var uncleared = sorted.filter(function (it) { return !it.cleared; });
+    var keepCleared = Math.min(cleared.length, MAX_RECORDS);
+    var keepUncleared = Math.max(0, MAX_RECORDS - keepCleared);
+    var result = cleared.slice(0, keepCleared).concat(uncleared.slice(0, keepUncleared));
+    result.sort(function (a, b) { return (b.savedAt || 0) - (a.savedAt || 0); });
+    return result;
+  }
 
   // 经典模式记录（含难度/通关/耗时）
   var ClassicStorage = {
@@ -133,7 +150,10 @@
       } catch (e) { return []; }
     },
     set: function (key, arr) {
-      try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) {}
+      try {
+        if (arr.length > MAX_RECORDS) arr = trimClassicRecords(arr);
+        localStorage.setItem(key, JSON.stringify(arr));
+      } catch (e) {}
     },
     getHistory: function () { return this.get(this.historyKey); },
     setHistory: function (arr) { this.set(this.historyKey, arr); },
