@@ -98,6 +98,9 @@
   var difficultyDialog = document.getElementById('difficultyDialog');
   var difficultyClose = document.getElementById('difficultyClose');
   var difficultyOptions = document.querySelectorAll('.difficulty-option');
+  var statEasy = document.getElementById('statEasy');
+  var statMedium = document.getElementById('statMedium');
+  var statHard = document.getElementById('statHard');
 
   // ===== localStorage 封装 =====
   var MAX_RECORDS = 50;   // 历史/收藏记录上限，超出裁剪最旧
@@ -816,6 +819,19 @@
     classicTimerEl.textContent = formatTime(classicSeconds);
   }
 
+  // 统计各难度通关次数
+  function updateClassicStats() {
+    var hist = ClassicStorage.getHistory();
+    var stats = { easy: 0, medium: 0, hard: 0 };
+    for (var i = 0; i < hist.length; i++) {
+      var d = hist[i].difficulty;
+      if (hist[i].cleared && (d === 'easy' || d === 'medium' || d === 'hard')) stats[d]++;
+    }
+    statEasy.textContent = stats.easy;
+    statMedium.textContent = stats.medium;
+    statHard.textContent = stats.hard;
+  }
+
   function buildNumPad() {
     var html = '';
     for (var n = 1; n <= 9; n++) {
@@ -895,6 +911,7 @@
     updateClassicNotesButton();
     updateClassicNoteModeButton();
     updateClassicCheckButton();
+    updateClassicStats();
   }
 
   function selectClassicCell(r, c) {
@@ -1505,5 +1522,6 @@
   // 经典模式初始化
   buildNumPad();
   restoreClassicProgress();
+  updateClassicStats();
   switchMode('classic');   // 默认进入经典数独模式
 })();

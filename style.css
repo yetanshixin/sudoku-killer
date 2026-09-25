@@ -989,6 +989,67 @@ dialog::backdrop {
   padding-bottom: 1.5rem;
 }
 
+/* ---- 通关统计 ---- */
+.classic-stats {
+  margin-top: 0.2rem;
+  padding: 0.8rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.stats-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.55rem 0.4rem;
+  border-radius: 10px;
+}
+
+.stat-item.easy {
+  background: var(--ok-bg);
+}
+
+.stat-item.medium {
+  background: var(--warn-bg);
+}
+
+.stat-item.hard {
+  background: var(--error-bg);
+}
+
+.stat-diff {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.stat-item.easy .stat-diff {
+  color: var(--ok);
+}
+
+.stat-item.medium .stat-diff {
+  color: var(--warn);
+}
+
+.stat-item.hard .stat-diff {
+  color: var(--error);
+}
+
+.stat-count {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---- 经典模式三级高亮（格子背景） ---- */
 .cell.peer {
   background: var(--surface-2);
