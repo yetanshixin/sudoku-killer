@@ -17,6 +17,24 @@
   var statusTimer = null;
   var showPencil = false;      // 是否显示候选小数字（默认关闭）
 
+  // ===== 经典数独模式状态 =====
+  var mode = 'solver';          // 'solver' | 'classic'
+  var classicBoard = emptyBoard();
+  var classicSolution = null;
+  var classicGivens = new Set();
+  var classicNotes = [];        // 9x9，每格为 Set 或 null
+  var classicHistory = [];      // 撤销栈 [{r, c, prevVal}]
+  var classicDifficulty = 'medium';
+  var classicSelected = null;   // {r, c}
+  var classicNoteMode = false;
+  var classicShowNotes = false;
+  var classicTimerId = null;
+  var classicSeconds = 0;
+  var classicDone = false;
+  var classicGenerated = false;
+  var classicStatusTimer = null;
+  var libraryMode = 'solver';   // libraryDialog 当前数据源
+
   function emptyBoard() {
     var b = [];
     for (var r = 0; r < SIZE; r++) b.push(new Array(SIZE).fill(0));
@@ -57,10 +75,55 @@
   var favoritesPanel = document.getElementById('favoritesPanel');
   var dialogTabs = document.querySelectorAll('.dialog-tab');
 
+  // 经典模式 DOM
+  var modeSlider = document.getElementById('modeSlider');
+  var modeTabs = document.querySelectorAll('.mode-tab');
+  var classicBoardEl = document.getElementById('classicBoard');
+  var classicDifficultyEl = document.getElementById('classicDifficulty');
+  var classicFilledEl = document.getElementById('classicFilled');
+  var classicTimerEl = document.getElementById('classicTimer');
+  var btnClassicCheck = document.getElementById('btnClassicCheck');
+  var btnClassicNotes = document.getElementById('btnClassicNotes');
+  var btnClassicFav = document.getElementById('btnClassicFav');
+  var btnClassicUndo = document.getElementById('btnClassicUndo');
+  var btnClassicErase = document.getElementById('btnClassicErase');
+  var btnClassicEraseAll = document.getElementById('btnClassicEraseAll');
+  var btnClassicNote = document.getElementById('btnClassicNote');
+  var btnClassicLibrary = document.getElementById('btnClassicLibrary');
+  var btnClassicSmart = document.getElementById('btnClassicSmart');
+  var numPad = document.getElementById('numPad');
+  var classicStatusCard = document.getElementById('classicStatusCard');
+  var classicStatusIcon = document.getElementById('classicStatusIcon');
+  var classicStatusText = document.getElementById('classicStatusText');
+  var difficultyDialog = document.getElementById('difficultyDialog');
+  var difficultyClose = document.getElementById('difficultyClose');
+  var difficultyOptions = document.querySelectorAll('.difficulty-option');
+
   // ===== localStorage 封装 =====
   var Storage = {
     historyKey: 'sudoku_history',
     favKey: 'sudoku_favorites',
+    get: function (key) {
+      try {
+        var raw = localStorage.getItem(key);
+        if (!raw) return [];
+        var arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      } catch (e) { return []; }
+    },
+    set: function (key, arr) {
+      try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) {}
+    },
+    getHistory: function () { return this.get(this.historyKey); },
+    setHistory: function (arr) { this.set(this.historyKey, arr); },
+    getFavorites: function () { return this.get(this.favKey); },
+    setFavorites: function (arr) { this.set(this.favKey, arr); }
+  };
+
+  // 经典模式记录（含难度/通关/耗时）
+  var ClassicStorage = {
+    historyKey: 'sudoku_classic_history',
+    favKey: 'sudoku_classic_favorites',
     get: function (key) {
       try {
         var raw = localStorage.getItem(key);
@@ -349,9 +412,23 @@
     renderList('favorites');
   }
 
+  // 经典记录排序：皇冠置顶，组内按时间降序
+  function sortClassicList(list) {
+    return list.slice().sort(function (a, b) {
+      var ca = a.cleared ? 1 : 0, cb = b.cleared ? 1 : 0;
+      if (ca !== cb) return cb - ca;
+      return (b.savedAt || 0) - (a.savedAt || 0);
+    });
+  }
+
   function renderList(lib) {
     var panel = lib === 'history' ? historyPanel : favoritesPanel;
-    var list = lib === 'history' ? Storage.getHistory() : Storage.getFavorites();
+    var list;
+    if (libraryMode === 'classic') {
+      list = sortClassicList(lib === 'history' ? ClassicStorage.getHistory() : ClassicStorage.getFavorites());
+    } else {
+      list = lib === 'history' ? Storage.getHistory() : Storage.getFavorites();
+    }
     if (list.length === 0) {
       panel.innerHTML = '<div class="lib-empty">暂无记录</div>';
       return;
@@ -359,23 +436,51 @@
     var html = '';
     for (var i = 0; i < list.length; i++) {
       var it = list[i];
-      var nameHtml;
-      if (lib === 'favorites') {
-        nameHtml = '<input class="lib-name-input" value="' + escapeHtml(it.name) +
-                   '" data-idx="' + i + '">';
-      } else {
-        nameHtml = '<span class="lib-name">' + escapeHtml(it.name) + '</span>';
-      }
-      html += '<div class="lib-item">' +
-              '<div class="lib-item-info">' + nameHtml +
-              '<span class="lib-meta">已填 ' + countDigits(it.board) + ' 格</span></div>' +
-              '<div class="lib-actions">' +
-              '<button class="lib-btn export" data-action="export" data-lib="' + lib + '" data-idx="' + i + '">导出</button>' +
-              '<button class="lib-btn apply" data-action="apply" data-lib="' + lib + '" data-idx="' + i + '">应用</button>' +
-              '<button class="lib-btn del" data-action="delete" data-lib="' + lib + '" data-idx="' + i + '">删除</button>' +
-              '</div></div>';
+      html += libraryMode === 'classic'
+        ? renderClassicLibItem(lib, it, i)
+        : renderSolverLibItem(lib, it, i);
     }
     panel.innerHTML = html;
+  }
+
+  function renderSolverLibItem(lib, it, i) {
+    var nameHtml = lib === 'favorites'
+      ? '<input class="lib-name-input" value="' + escapeHtml(it.name) + '" data-idx="' + i + '">'
+      : '<span class="lib-name">' + escapeHtml(it.name) + '</span>';
+    return '<div class="lib-item">' +
+           '<div class="lib-item-info">' + nameHtml +
+           '<span class="lib-meta">已填 ' + countDigits(it.board) + ' 格</span></div>' +
+           '<div class="lib-actions">' +
+           '<button class="lib-btn export" data-action="export" data-lib="' + lib + '" data-idx="' + i + '">导出</button>' +
+           '<button class="lib-btn apply" data-action="apply" data-lib="' + lib + '" data-idx="' + i + '">应用</button>' +
+           '<button class="lib-btn del" data-action="delete" data-lib="' + lib + '" data-idx="' + i + '">删除</button>' +
+           '</div></div>';
+  }
+
+  function renderClassicLibItem(lib, it, i) {
+    var diff = it.difficulty || 'medium';
+    var nameHtml = lib === 'favorites'
+      ? '<input class="lib-name-input" value="' + escapeHtml(it.name) + '" data-idx="' + i + '">'
+      : '<span class="lib-name">' + escapeHtml(it.name) + '</span>';
+    var crown = it.cleared ? '<span class="lib-crown" title="已通关">👑</span>' : '';
+    var meta;
+    if (it.cleared) {
+      meta = '耗时 ' + formatTime(it.bestTime);
+    } else {
+      var filled = it.progress ? countDigits(it.progress) - countDigits(it.board) : countDigits(it.board);
+      meta = '已填 ' + filled + ' 格';
+      if (it.elapsed != null) meta += ' · 用时 ' + formatTime(it.elapsed);
+    }
+    return '<div class="lib-item">' +
+           '<div class="lib-item-info">' +
+           '<div class="lib-name-row">' + nameHtml +
+           '<span class="lib-diff-tag ' + diff + '">' + difficultyLabel(diff) + '</span>' + crown + '</div>' +
+           '<span class="lib-meta">' + meta + '</span></div>' +
+           '<div class="lib-actions">' +
+           '<button class="lib-btn export" data-action="export" data-lib="' + lib + '" data-idx="' + i + '">导出</button>' +
+           '<button class="lib-btn apply" data-action="apply" data-lib="' + lib + '" data-idx="' + i + '">应用</button>' +
+           '<button class="lib-btn del" data-action="delete" data-lib="' + lib + '" data-idx="' + i + '">删除</button>' +
+           '</div></div>';
   }
 
   // ===== 提示（临时，自动消失） =====
@@ -609,6 +714,500 @@
     e.target.value = '';
   }
 
+  // ===== 经典数独模式 =====
+  function difficultyLabel(d) {
+    return d === 'easy' ? '简单' : (d === 'hard' ? '困难' : '中等');
+  }
+
+  function formatTime(sec) {
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+  }
+
+  function toBoardArray(s) {
+    var b = emptyBoard();
+    for (var i = 0; i < 81; i++) {
+      b[Math.floor(i / 9)][i % 9] = parseInt(s[i], 10);
+    }
+    return b;
+  }
+
+  function classicPuzzleString() {
+    var s = '';
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        s += classicGivens.has(r + ',' + c) ? classicBoard[r][c] : 0;
+    return s;
+  }
+
+  function switchMode(m) {
+    mode = m;
+    modeSlider.classList.toggle('classic', m === 'classic');
+    modeTabs.forEach(function (t) { t.classList.toggle('active', t.dataset.mode === m); });
+    if (m === 'classic') {
+      if (!classicGenerated) {
+        if (!difficultyDialog.open) difficultyDialog.showModal();
+      } else {
+        startClassicTimer();
+      }
+    } else {
+      pauseClassicTimer();
+    }
+  }
+
+  function generateClassic(difficulty) {
+    showClassicStatus('warn', '正在生成' + difficultyLabel(difficulty) + '题目，请稍候...');
+    setTimeout(function () {
+      var res = SudokuSolver.generatePuzzle(difficulty);
+      classicDifficulty = difficulty;
+      classicBoard = res.puzzle;
+      classicSolution = res.solution;
+      classicGivens = new Set();
+      for (var r = 0; r < SIZE; r++)
+        for (var c = 0; c < SIZE; c++)
+          if (classicBoard[r][c] !== 0) classicGivens.add(r + ',' + c);
+      classicNotes = [];
+      for (var r2 = 0; r2 < SIZE; r2++) classicNotes.push(new Array(SIZE).fill(null));
+      classicHistory = [];
+      classicSelected = null;
+      classicNoteMode = false;
+      classicShowNotes = false;
+      classicSeconds = 0;
+      classicDone = false;
+      classicGenerated = true;
+      updateClassicDifficultyLabel();
+      renderClassicBoard();
+      startClassicTimer();
+      showClassicStatus('ok', '已生成' + difficultyLabel(difficulty) + '题目，开始计时。');
+    }, 50);
+  }
+
+  function updateClassicDifficultyLabel() {
+    classicDifficultyEl.textContent = difficultyLabel(classicDifficulty);
+    classicDifficultyEl.className = 'difficulty-tag ' + classicDifficulty;
+  }
+
+  function updateClassicMeta() {
+    var filled = 0;
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        if (classicBoard[r][c] !== 0) filled++;
+    classicFilledEl.textContent = filled;
+    classicTimerEl.textContent = formatTime(classicSeconds);
+  }
+
+  function buildNumPad() {
+    var html = '';
+    for (var n = 1; n <= 9; n++) {
+      html += '<button class="num-key" data-n="' + n + '">' +
+              '<span class="num-big">' + n + '</span>' +
+              '<span class="num-left">9</span></button>';
+    }
+    numPad.innerHTML = html;
+  }
+
+  function updateNumPad() {
+    var counts = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++) {
+        var v = classicBoard[r][c];
+        if (v >= 1 && v <= 9) counts[v - 1]++;
+      }
+    numPad.querySelectorAll('.num-key').forEach(function (key) {
+      var n = parseInt(key.dataset.n, 10);
+      var left = 9 - counts[n - 1];
+      key.querySelector('.num-left').textContent = left;
+      key.classList.toggle('disabled', left <= 0);
+    });
+  }
+
+  function renderClassicPencil(vals) {
+    var html = '<div class="pencil">';
+    for (var n = 1; n <= 9; n++) {
+      var show = vals && vals.indexOf(n) !== -1;
+      html += '<span class="' + (show ? '' : 'off') + '">' + (show ? n : '') + '</span>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderClassicBoard() {
+    var cands = classicShowNotes ? SudokuSolver.computeCandidates(classicBoard) : null;
+    var sel = classicSelected;
+    var selVal = sel ? classicBoard[sel.r][sel.c] : 0;
+    var html = '';
+    for (var r = 0; r < SIZE; r++) {
+      for (var c = 0; c < SIZE; c++) {
+        var val = classicBoard[r][c];
+        var cls = ['cell'];
+        if (r % 3 === 2 && r !== 8) cls.push('row-border');
+        if (c % 3 === 2 && c !== 8) cls.push('col-border');
+
+        if (sel) {
+          if (r === sel.r && c === sel.c) {
+            cls.push('selected');
+          } else {
+            var sameBox = Math.floor(r / 3) === Math.floor(sel.r / 3) &&
+                          Math.floor(c / 3) === Math.floor(sel.c / 3);
+            if (r === sel.r || c === sel.c || sameBox) cls.push('peer');
+            if (selVal !== 0 && val === selVal) cls.push('same-num');
+          }
+        }
+
+        var inner = '';
+        if (val !== 0) {
+          cls.push(classicGivens.has(r + ',' + c) ? 'given' : 'filled');
+          inner = '<span class="cell-value">' + val + '</span>';
+        } else {
+          var note = classicNotes[r][c];
+          var vals = null;
+          if (note && note.size > 0) vals = Array.from(note);
+          else if (cands && cands[r] && cands[r][c]) vals = cands[r][c];
+          inner = renderClassicPencil(vals);
+        }
+        html += '<div class="' + cls.join(' ') + '" data-r="' + r + '" data-c="' + c + '">' + inner + '</div>';
+      }
+    }
+    classicBoardEl.innerHTML = html;
+    updateClassicMeta();
+    updateNumPad();
+    updateClassicFavButton();
+    updateClassicNotesButton();
+    updateClassicNoteModeButton();
+    updateClassicCheckButton();
+  }
+
+  function selectClassicCell(r, c) {
+    classicSelected = { r: r, c: c };
+    renderClassicBoard();
+  }
+
+  function handleClassicNum(n) {
+    if (classicDone) return;
+    if (!classicSelected) { showClassicStatus('warn', '请先选中一个空白格。'); return; }
+    var r = classicSelected.r, c = classicSelected.c;
+    if (classicGivens.has(r + ',' + c)) { showClassicStatus('warn', '题目格不可修改。'); return; }
+
+    if (classicNoteMode) {
+      if (classicBoard[r][c] !== 0) { showClassicStatus('warn', '该格已有数字，无法备注。'); return; }
+      var note = classicNotes[r][c] || (classicNotes[r][c] = new Set());
+      if (note.has(n)) note.delete(n); else note.add(n);
+    } else {
+      if (classicBoard[r][c] !== n) {
+        classicHistory.push({ r: r, c: c, prevVal: classicBoard[r][c] });
+        classicBoard[r][c] = n;
+        classicNotes[r][c] = null;
+        saveClassicProgress();
+        checkClassicDone();
+      }
+    }
+    renderClassicBoard();
+  }
+
+  function undoClassic() {
+    if (classicDone) return;
+    if (classicHistory.length === 0) { showClassicStatus('warn', '没有可撤销的操作。'); return; }
+    var op = classicHistory.pop();
+    classicBoard[op.r][op.c] = op.prevVal;
+    saveClassicProgress();
+    renderClassicBoard();
+  }
+
+  function eraseClassic() {
+    if (classicDone) return;
+    if (!classicSelected) { showClassicStatus('warn', '请先选中一个格子。'); return; }
+    var r = classicSelected.r, c = classicSelected.c;
+    if (classicGivens.has(r + ',' + c)) { showClassicStatus('warn', '题目格不可修改。'); return; }
+    if (classicBoard[r][c] !== 0) {
+      classicHistory.push({ r: r, c: c, prevVal: classicBoard[r][c] });
+      classicBoard[r][c] = 0;
+    }
+    classicNotes[r][c] = null;
+    saveClassicProgress();
+    renderClassicBoard();
+  }
+
+  // 擦除所有用户填入的数字，还原到只剩题目
+  function clearClassicFilled() {
+    if (!classicGenerated || classicDone) return;
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        if (!classicGivens.has(r + ',' + c)) classicBoard[r][c] = 0;
+    classicNotes = [];
+    for (var r2 = 0; r2 < SIZE; r2++) classicNotes.push(new Array(SIZE).fill(null));
+    classicHistory = [];
+    saveClassicProgress();
+    renderClassicBoard();
+    showClassicStatus('ok', '已清除所有填入数字。');
+  }
+
+  function toggleClassicNoteMode() {
+    classicNoteMode = !classicNoteMode;
+    updateClassicNoteModeButton();
+  }
+
+  function updateClassicNoteModeButton() {
+    btnClassicNote.classList.toggle('active', classicNoteMode);
+  }
+
+  function toggleClassicNotes() {
+    classicShowNotes = !classicShowNotes;
+    updateClassicNotesButton();
+    renderClassicBoard();
+  }
+
+  function updateClassicNotesButton() {
+    btnClassicNotes.classList.toggle('active', classicShowNotes);
+  }
+
+  function smartSolve() {
+    if (!classicGenerated) return;
+    switchMode('solver');
+    loadFromString(serializeBoard(classicBoard));
+  }
+
+  function getClassicCheckResult() {
+    if (!SudokuSolver.isBoardValid(classicBoard)) {
+      return { kind: 'error', text: '当前盘面存在数字冲突。' };
+    }
+    var res = SudokuSolver.countSolutions(classicBoard, 2);
+    if (res.count === 0) return { kind: 'error', text: '当前盘面无解。' };
+    if (res.count === 1) return { kind: 'ok', text: '当前盘面存在唯一解。' };
+    return { kind: 'warn', text: '当前盘面有多个解。' };
+  }
+
+  function updateClassicCheckButton() {
+    if (!classicGenerated) { btnClassicCheck.className = 'icon-btn'; return; }
+    btnClassicCheck.className = 'icon-btn ' + getClassicCheckResult().kind;
+  }
+
+  function handleClassicCheck() {
+    if (!classicGenerated) return;
+    var r = getClassicCheckResult();
+    btnClassicCheck.className = 'icon-btn ' + r.kind;
+    showClassicStatus(r.kind, r.text);
+  }
+
+  function isClassicFavorited() {
+    var s = classicPuzzleString();
+    return ClassicStorage.getFavorites().some(function (it) { return it.board === s; });
+  }
+
+  function updateClassicFavButton() {
+    btnClassicFav.classList.toggle('active', isClassicFavorited());
+  }
+
+  function toggleClassicFavorite() {
+    if (!classicGenerated) return;
+    var s = classicPuzzleString();
+    var list = ClassicStorage.getFavorites();
+    var idx = -1;
+    for (var i = 0; i < list.length; i++) if (list[i].board === s) { idx = i; break; }
+    if (idx !== -1) {
+      list.splice(idx, 1);
+      ClassicStorage.setFavorites(list);
+      showClassicStatus('warn', '已取消收藏。');
+    } else {
+      list.unshift({
+        name: nowName(), board: s,
+        progress: classicDone ? null : serializeBoard(classicBoard),
+        elapsed: classicDone ? null : classicSeconds,
+        difficulty: classicDifficulty,
+        cleared: classicDone, bestTime: classicDone ? classicSeconds : null, savedAt: Date.now()
+      });
+      ClassicStorage.setFavorites(list);
+      showClassicStatus('ok', '已收藏。');
+    }
+    updateClassicFavButton();
+  }
+
+  function checkClassicDone() {
+    if (classicDone) return;
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        if (classicBoard[r][c] !== classicSolution[r][c]) return;
+    classicDone = true;
+    pauseClassicTimer();
+    recordClassicCleared();
+    showClassicStatus('ok', '恭喜通关！用时 ' + formatTime(classicSeconds) + '。');
+  }
+
+  function recordClassicCleared() {
+    var s = classicPuzzleString();
+    var hist = ClassicStorage.getHistory();
+    var idx = -1;
+    for (var i = 0; i < hist.length; i++) if (hist[i].board === s) { idx = i; break; }
+    if (idx !== -1) {
+      hist[idx].cleared = true;
+      hist[idx].difficulty = classicDifficulty;
+      hist[idx].bestTime = (hist[idx].bestTime == null) ? classicSeconds : Math.min(hist[idx].bestTime, classicSeconds);
+      hist[idx].progress = null;
+      hist[idx].elapsed = null;
+      hist[idx].savedAt = Date.now();
+    } else {
+      hist.unshift({
+        name: nowName(), board: s, difficulty: classicDifficulty,
+        cleared: true, bestTime: classicSeconds, savedAt: Date.now()
+      });
+    }
+    ClassicStorage.setHistory(hist);
+
+    var favs = ClassicStorage.getFavorites();
+    var fidx = -1;
+    for (var j = 0; j < favs.length; j++) if (favs[j].board === s) { fidx = j; break; }
+    if (fidx !== -1) {
+      favs[fidx].cleared = true;
+      favs[fidx].bestTime = (favs[fidx].bestTime == null) ? classicSeconds : Math.min(favs[fidx].bestTime, classicSeconds);
+      favs[fidx].progress = null;
+      favs[fidx].elapsed = null;
+      ClassicStorage.setFavorites(favs);
+    }
+    updateClassicFavButton();
+  }
+
+  function startClassicTimer() {
+    if (classicTimerId || classicDone || !classicGenerated) return;
+    classicTimerId = setInterval(function () {
+      classicSeconds++;
+      updateClassicMeta();
+    }, 1000);
+  }
+
+  function pauseClassicTimer() {
+    if (classicTimerId) { clearInterval(classicTimerId); classicTimerId = null; }
+  }
+
+  function showClassicStatus(kind, text) {
+    classicStatusCard.hidden = false;
+    classicStatusCard.className = 'status-card ' + kind;
+    classicStatusIcon.textContent = kind === 'ok' ? '✓' : (kind === 'warn' ? '⚠' : '✗');
+    classicStatusText.textContent = text;
+    if (classicStatusTimer) clearTimeout(classicStatusTimer);
+    classicStatusTimer = setTimeout(function () { classicStatusCard.hidden = true; }, 3000);
+  }
+
+  function hasClassicFilled() {
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        if (classicBoard[r][c] !== 0 && !classicGivens.has(r + ',' + c)) return true;
+    return false;
+  }
+
+  // 保存进行中的进度（未通关），用于断点续玩
+  function saveClassicProgress() {
+    if (!classicGenerated || classicDone) return;
+    var s = classicPuzzleString();
+    var hist = ClassicStorage.getHistory();
+    var idx = -1;
+    for (var i = 0; i < hist.length; i++) {
+      if (hist[i].board === s && !hist[i].cleared) { idx = i; break; }
+    }
+    if (!hasClassicFilled()) {
+      if (idx !== -1) { hist.splice(idx, 1); ClassicStorage.setHistory(hist); }
+      return;
+    }
+    if (idx !== -1) hist.splice(idx, 1);
+    hist.unshift({
+      name: nowName(), board: s, progress: serializeBoard(classicBoard),
+      elapsed: classicSeconds, difficulty: classicDifficulty,
+      cleared: false, bestTime: null, savedAt: Date.now()
+    });
+    ClassicStorage.setHistory(hist);
+  }
+
+  // 页面打开时恢复最新未通关进度
+  function restoreClassicProgress() {
+    var hist = ClassicStorage.getHistory();
+    var best = null;
+    for (var i = 0; i < hist.length; i++) {
+      if (hist[i].cleared) continue;
+      if (!best || (hist[i].savedAt || 0) > (best.savedAt || 0)) best = hist[i];
+    }
+    if (!best) return false;
+    var puzzleArr = toBoardArray(best.board);
+    var res = SudokuSolver.countSolutions(puzzleArr, 2);
+    if (res.count === 0) return false;
+    classicDifficulty = best.difficulty || 'medium';
+    classicBoard = toBoardArray(best.progress || best.board);
+    classicSolution = res.solution;
+    classicGivens = new Set();
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        if (puzzleArr[r][c] !== 0) classicGivens.add(r + ',' + c);
+    classicNotes = [];
+    for (var r2 = 0; r2 < SIZE; r2++) classicNotes.push(new Array(SIZE).fill(null));
+    classicHistory = [];
+    classicSelected = null;
+    classicNoteMode = false;
+    classicShowNotes = false;
+    classicSeconds = best.elapsed || 0;
+    classicDone = false;
+    classicGenerated = true;
+    updateClassicDifficultyLabel();
+    renderClassicBoard();
+    return true;
+  }
+
+  function moveClassicSelection(dr, dc) {
+    if (!classicGenerated) return;
+    if (!classicSelected) { selectClassicCell(0, 0); return; }
+    var nr = Math.min(8, Math.max(0, classicSelected.r + dr));
+    var nc = Math.min(8, Math.max(0, classicSelected.c + dc));
+    if (nr !== classicSelected.r || nc !== classicSelected.c) selectClassicCell(nr, nc);
+  }
+
+  function classicApplyItem(lib, idx) {
+    var list = lib === 'history' ? ClassicStorage.getHistory() : ClassicStorage.getFavorites();
+    var item = list[idx];
+    if (!item) return;
+    var puzzleArr = toBoardArray(item.board);
+    var res = SudokuSolver.countSolutions(puzzleArr, 2);
+    if (res.count === 0) { showClassicStatus('error', '该题目无解，无法载入。'); return; }
+    classicDifficulty = item.difficulty || 'medium';
+    classicBoard = item.progress ? toBoardArray(item.progress) : puzzleArr;
+    classicSolution = res.solution;
+    classicGivens = new Set();
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        if (puzzleArr[r][c] !== 0) classicGivens.add(r + ',' + c);
+    classicNotes = [];
+    for (var r2 = 0; r2 < SIZE; r2++) classicNotes.push(new Array(SIZE).fill(null));
+    classicHistory = [];
+    classicSelected = null;
+    classicNoteMode = false;
+    classicShowNotes = false;
+    classicSeconds = item.elapsed || 0;
+    classicDone = false;
+    classicGenerated = true;
+    updateClassicDifficultyLabel();
+    renderClassicBoard();
+    libraryDialog.close();
+    switchMode('classic');
+  }
+
+  function classicDeleteItem(lib, idx) {
+    var list = lib === 'history' ? ClassicStorage.getHistory() : ClassicStorage.getFavorites();
+    list.splice(idx, 1);
+    if (lib === 'history') ClassicStorage.setHistory(list); else ClassicStorage.setFavorites(list);
+    renderLibrary();
+    updateClassicFavButton();
+  }
+
+  function classicExportItem(lib, idx) {
+    var list = lib === 'history' ? ClassicStorage.getHistory() : ClassicStorage.getFavorites();
+    var item = list[idx];
+    if (!item) return;
+    copyText(item.board);
+  }
+
+  function classicRenameFavorite(idx, name) {
+    var list = ClassicStorage.getFavorites();
+    if (list[idx]) {
+      list[idx].name = name || nowName();
+      ClassicStorage.setFavorites(list);
+    }
+  }
+
   // ===== 事件绑定 =====
   btnSolve.addEventListener('click', handleSolve);
   btnStep.addEventListener('click', handleStep);
@@ -628,8 +1227,9 @@
     if (e.key === 'Enter') loadFromString(pasteInput.value);
   });
 
-  // 记录弹窗
+  // 记录弹窗（求解器）
   btnLibrary.addEventListener('click', function () {
+    libraryMode = 'solver';
     renderLibrary();
     libraryDialog.showModal();
   });
@@ -655,23 +1255,114 @@
     });
   });
 
-  // 弹窗内：应用 / 删除（事件委托）
+  // 弹窗内：应用 / 删除（事件委托，分模式）
   libraryDialog.addEventListener('click', function (e) {
     var btn = e.target.closest('[data-action]');
     if (!btn) return;
     var action = btn.dataset.action;
     var lib = btn.dataset.lib;
     var idx = parseInt(btn.dataset.idx, 10);
-    if (action === 'apply') applyItem(lib, idx);
-    else if (action === 'delete') deleteItem(lib, idx);
-    else if (action === 'export') exportItem(lib, idx);
+    if (libraryMode === 'classic') {
+      if (action === 'apply') classicApplyItem(lib, idx);
+      else if (action === 'delete') classicDeleteItem(lib, idx);
+      else if (action === 'export') classicExportItem(lib, idx);
+    } else {
+      if (action === 'apply') applyItem(lib, idx);
+      else if (action === 'delete') deleteItem(lib, idx);
+      else if (action === 'export') exportItem(lib, idx);
+    }
   });
 
-  // 弹窗内：收藏重命名
+  // 弹窗内：收藏重命名（分模式）
   libraryDialog.addEventListener('change', function (e) {
     if (e.target.classList.contains('lib-name-input')) {
-      renameFavorite(parseInt(e.target.dataset.idx, 10), e.target.value.trim());
+      if (libraryMode === 'classic') {
+        classicRenameFavorite(parseInt(e.target.dataset.idx, 10), e.target.value.trim());
+      } else {
+        renameFavorite(parseInt(e.target.dataset.idx, 10), e.target.value.trim());
+      }
     }
+  });
+
+  // ===== 经典模式事件绑定 =====
+  modeTabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      switchMode(this.dataset.mode);
+    });
+  });
+
+  classicBoardEl.addEventListener('click', function (e) {
+    var cell = e.target.closest('.cell');
+    if (!cell) return;
+    selectClassicCell(parseInt(cell.dataset.r, 10), parseInt(cell.dataset.c, 10));
+  });
+
+  numPad.addEventListener('click', function (e) {
+    var key = e.target.closest('.num-key');
+    if (!key || key.classList.contains('disabled')) return;
+    handleClassicNum(parseInt(key.dataset.n, 10));
+  });
+
+  btnClassicUndo.addEventListener('click', undoClassic);
+  btnClassicErase.addEventListener('click', eraseClassic);
+  btnClassicEraseAll.addEventListener('click', clearClassicFilled);
+  btnClassicNote.addEventListener('click', toggleClassicNoteMode);
+  btnClassicNotes.addEventListener('click', toggleClassicNotes);
+  btnClassicCheck.addEventListener('click', handleClassicCheck);
+  btnClassicFav.addEventListener('click', toggleClassicFavorite);
+  btnClassicSmart.addEventListener('click', smartSolve);
+
+  btnClassicLibrary.addEventListener('click', function () {
+    libraryMode = 'classic';
+    renderLibrary();
+    libraryDialog.showModal();
+  });
+
+  classicDifficultyEl.addEventListener('click', function () {
+    if (!difficultyDialog.open) difficultyDialog.showModal();
+  });
+
+  difficultyOptions.forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      difficultyDialog.close();
+      generateClassic(opt.dataset.diff);
+    });
+  });
+
+  difficultyClose.addEventListener('click', function () {
+    difficultyDialog.close();
+    if (!classicGenerated) generateClassic('medium');
+  });
+
+  // Esc 关闭难度弹窗时兜底生成中等
+  difficultyDialog.addEventListener('cancel', function () {
+    if (!classicGenerated) generateClassic('medium');
+  });
+
+  // 电脑键盘：数字键输入、方向键移动选中、退格擦除
+  document.addEventListener('keydown', function (e) {
+    if (mode !== 'classic' || !classicGenerated) return;
+    if (difficultyDialog.open) return;
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    var key = e.key;
+    if (key >= '1' && key <= '9') {
+      e.preventDefault();
+      handleClassicNum(parseInt(key, 10));
+      return;
+    }
+    if (key === 'Backspace' || key === 'Delete') {
+      e.preventDefault();
+      eraseClassic();
+      return;
+    }
+    var dr = 0, dc = 0;
+    if (key === 'ArrowUp') dr = -1;
+    else if (key === 'ArrowDown') dr = 1;
+    else if (key === 'ArrowLeft') dc = -1;
+    else if (key === 'ArrowRight') dc = 1;
+    else return;
+    e.preventDefault();
+    moveClassicSelection(dr, dc);
   });
 
   // 输入数字后，光标自动跳到下一个空白格
@@ -790,4 +1481,8 @@
   updateStepButtons();
   renderLibrary();
   restoreLastHistory();
+
+  // 经典模式初始化
+  buildNumPad();
+  restoreClassicProgress();
 })();

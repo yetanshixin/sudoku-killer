@@ -11,96 +11,181 @@
 
 <body>
   <div class="app">
-    <header class="app-header">
-      <div class="header-title">
-        <h1>数独求解器</h1>
-        <p class="subtitle"><span class="fill-count" id="fillCount">已填 0/81</span></p>
-      </div>
-      <div class="top-actions">
-        <button id="btnCheck" class="icon-btn" title="检查唯一解">
-          <svg class="icon-check" viewBox="0 0 24 24">
-            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
-          </svg>
-          <svg class="icon-cross" viewBox="0 0 24 24">
-            <path
-              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
-              fill="currentColor" />
-          </svg>
-        </button>
-        <button id="btnTogglePencil" class="icon-btn" title="显示/隐藏小数字">
-          <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-          <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path
-              d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-            <line x1="1" y1="1" x2="23" y2="23" />
-          </svg>
-        </button>
-        <button id="btnFav" class="icon-btn" title="收藏">
-          <svg viewBox="0 0 24 24">
-            <path class="star"
-              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
-        </button>
-      </div>
-    </header>
+    <nav class="mode-tabs">
+      <button class="mode-tab" data-mode="classic">经典数独</button>
+      <button class="mode-tab active" data-mode="solver">求解器</button>
+    </nav>
 
-    <section class="status-card" id="statusCard" hidden>
-      <span class="status-icon" id="statusIcon"></span>
-      <div class="status-text" id="statusText"></div>
-    </section>
+    <div class="mode-viewport">
+      <div class="mode-slider" id="modeSlider">
 
-    <section class="board-wrapper">
-      <div class="board" id="board"></div>
-    </section>
+        <!-- ================= 经典数独 ================= -->
+        <section class="mode-panel mode-classic">
+          <header class="classic-header">
+            <div class="classic-title">
+              <h2 class="classic-heading">经典数独</h2>
+              <div class="classic-meta">
+                <button id="classicDifficulty" class="difficulty-tag" title="点击更换难度">中等</button>
+                <span>已填 <span id="classicFilled">0</span>/81 · 用时 <span id="classicTimer">00:00</span></span>
+              </div>
+            </div>
+            <div class="top-actions">
+              <button id="btnClassicCheck" class="icon-btn" title="检查唯一解">
+                <svg class="icon-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor"/></svg>
+                <svg class="icon-cross" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/></svg>
+              </button>
+              <button id="btnClassicNotes" class="icon-btn" title="显示/隐藏小数字">
+                <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+              <button id="btnClassicFav" class="icon-btn" title="收藏">
+                <svg viewBox="0 0 24 24"><path class="star" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              </button>
+            </div>
+          </header>
 
-    <section class="explanation" id="explanation" hidden>
-      <div class="explanation-head">
-        <span class="explanation-badge" id="explBadge">技巧</span>
-        <span class="explanation-title" id="explTitle"></span>
-      </div>
-      <p class="explanation-text" id="explText"></p>
-    </section>
+          <section class="status-card" id="classicStatusCard" hidden>
+            <span class="status-icon" id="classicStatusIcon"></span>
+            <div class="status-text" id="classicStatusText"></div>
+          </section>
 
-    <section class="controls">
-      <div class="control-group control-group-row">
-        <button id="btnStep" class="btn btn-primary">下一步</button>
-        <button id="btnSolve" class="btn btn-primary">一键全解</button>
-      </div>
-      <div class="control-group control-group-row">
-        <button id="btnUndo" class="btn btn-secondary" disabled>上一步</button>
-        <button id="btnReset" class="btn btn-secondary" disabled>返回初始</button>
-      </div>
-      <div class="control-group control-group-row">
-        <button id="btnEdit" class="btn btn-secondary" disabled>退出推理</button>
-        <button id="btnClear" class="btn btn-danger-ghost">全部清空</button>
-      </div>
-      <div class="control-group control-group-row">
-        <button id="btnLibrary" class="btn btn-secondary">历史/收藏</button>
-        <button id="btnHelp" class="btn btn-secondary">帮助说明</button>
-      </div>
-    </section>
+          <div class="board-wrapper">
+            <div class="board" id="classicBoard"></div>
+          </div>
 
-    <section class="input-bar">
-      <div class="paste-group">
-        <button id="btnOCR" class="icon-btn" title="识别图片">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-            <circle cx="8.5" cy="8.5" r="1.5" />
-            <path d="M21 15l-5-5L5 21" />
-          </svg>
-        </button>
-        <input type="text" id="pasteInput" class="paste-input" placeholder="粘贴 81 位数字（0 代表空格）" inputmode="numeric"
-          autocomplete="off">
-        <button id="pasteBtn" class="btn btn-secondary">载入</button>
-        <button id="exportBtn" class="btn btn-secondary">导出</button>
+          <div class="classic-controls">
+            <div class="control-group control-group-row">
+              <button id="btnClassicUndo" class="btn btn-secondary">撤销</button>
+              <button id="btnClassicErase" class="btn btn-secondary">擦除</button>
+              <button id="btnClassicEraseAll" class="btn btn-secondary">全部擦除</button>
+              <button id="btnClassicNote" class="btn btn-secondary">备注</button>
+              <button id="btnClassicLibrary" class="btn btn-secondary">历史/收藏</button>
+            </div>
+          </div>
+
+          <div class="num-pad" id="numPad"></div>
+
+          <div class="control-group control-group-row smart-row">
+            <button id="btnClassicSmart" class="btn btn-primary">智能求解</button>
+          </div>
+        </section>
+
+        <!-- ================= 求解器 ================= -->
+        <section class="mode-panel mode-solver">
+          <header class="app-header">
+            <div class="header-title">
+              <h1>数独求解器</h1>
+              <p class="subtitle"><span class="fill-count" id="fillCount">已填 0/81</span></p>
+            </div>
+            <div class="top-actions">
+              <button id="btnCheck" class="icon-btn" title="检查唯一解">
+                <svg class="icon-check" viewBox="0 0 24 24">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
+                </svg>
+                <svg class="icon-cross" viewBox="0 0 24 24">
+                  <path
+                    d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                    fill="currentColor" />
+                </svg>
+              </button>
+              <button id="btnTogglePencil" class="icon-btn" title="显示/隐藏小数字">
+                <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              </button>
+              <button id="btnFav" class="icon-btn" title="收藏">
+                <svg viewBox="0 0 24 24">
+                  <path class="star"
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+              </button>
+            </div>
+          </header>
+
+          <section class="status-card" id="statusCard" hidden>
+            <span class="status-icon" id="statusIcon"></span>
+            <div class="status-text" id="statusText"></div>
+          </section>
+
+          <section class="board-wrapper">
+            <div class="board" id="board"></div>
+          </section>
+
+          <section class="explanation" id="explanation" hidden>
+            <div class="explanation-head">
+              <span class="explanation-badge" id="explBadge">技巧</span>
+              <span class="explanation-title" id="explTitle"></span>
+            </div>
+            <p class="explanation-text" id="explText"></p>
+          </section>
+
+          <section class="controls">
+            <div class="control-group control-group-row">
+              <button id="btnStep" class="btn btn-primary">下一步</button>
+              <button id="btnSolve" class="btn btn-primary">一键全解</button>
+            </div>
+            <div class="control-group control-group-row">
+              <button id="btnUndo" class="btn btn-secondary" disabled>上一步</button>
+              <button id="btnReset" class="btn btn-secondary" disabled>返回初始</button>
+            </div>
+            <div class="control-group control-group-row">
+              <button id="btnEdit" class="btn btn-secondary" disabled>退出推理</button>
+              <button id="btnClear" class="btn btn-danger-ghost">全部清空</button>
+            </div>
+            <div class="control-group control-group-row">
+              <button id="btnLibrary" class="btn btn-secondary">历史/收藏</button>
+              <button id="btnHelp" class="btn btn-secondary">帮助说明</button>
+            </div>
+          </section>
+
+          <section class="input-bar">
+            <div class="paste-group">
+              <button id="btnOCR" class="icon-btn" title="识别图片">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <line x1="9" y1="3" x2="9" y2="21" />
+                  <line x1="15" y1="3" x2="15" y2="21" />
+                  <line x1="3" y1="9" x2="21" y2="9" />
+                  <line x1="3" y1="15" x2="21" y2="15" />
+                </svg>
+              </button>
+              <input type="text" id="pasteInput" class="paste-input" placeholder="粘贴 81 位数字（0 代表空格）"
+                inputmode="numeric" autocomplete="off">
+              <button id="pasteBtn" class="btn btn-secondary">载入</button>
+              <button id="exportBtn" class="btn btn-secondary">导出</button>
+            </div>
+          </section>
+        </section>
+
       </div>
-    </section>
+    </div>
+
+    <dialog id="difficultyDialog">
+      <div class="dialog-head">
+        <span class="dialog-title">选择难度</span>
+        <button class="dialog-close" id="difficultyClose" title="关闭">×</button>
+      </div>
+      <div class="dialog-body difficulty-body">
+        <button class="difficulty-option easy" data-diff="easy">简单</button>
+        <button class="difficulty-option medium" data-diff="medium">中等</button>
+        <button class="difficulty-option hard" data-diff="hard">困难</button>
+      </div>
+    </dialog>
 
     <dialog id="helpDialog">
       <div class="dialog-head">
@@ -111,7 +196,7 @@
         <section class="help-group">
           <h3 class="help-group-title">使用说明</h3>
           <div class="help-item">输入已知数字，逐步推理或一键全解，自动判定唯一解。</div>
-          <div class="help-item">0或留空代表空格，支持截图识别和粘贴81位数字快速载入。</div>
+          <div class="help-item">0 或留空代表空格，支持粘贴 81 位数字快速载入。</div>
         </section>
         <section class="help-group">
           <h3 class="help-group-title">一、基础技巧</h3>
@@ -163,9 +248,8 @@
       </div>
     </dialog>
 
+    <input type="file" id="ocrFileInput" accept="image/*" hidden>
   </div>
-
-  <input type="file" id="ocrFileInput" accept="image/*" hidden>
 
   <script src="solver.js"></script>
   <script src="app.js"></script>

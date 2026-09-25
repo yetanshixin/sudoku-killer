@@ -64,7 +64,7 @@
     --highlight: #3a3310;
     --highlight-elim: #3a1a1a;
 
-    --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
   }
 }
 
@@ -89,7 +89,7 @@ body {
 .app {
   max-width: 500px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 0.8rem 1rem 2rem;
 }
 
 /* ---- 顶部：标题 + 图标按钮 ---- */
@@ -301,7 +301,6 @@ body {
   border: 2px solid var(--line-strong);
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: var(--shadow);
 }
 
 .cell {
@@ -474,7 +473,6 @@ body {
 .btn-primary {
   background: linear-gradient(135deg, var(--primary), var(--primary-2));
   color: #fff;
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.32);
 }
 
 .btn-secondary {
@@ -746,4 +744,338 @@ dialog::backdrop {
   color: var(--text-muted);
   line-height: 1.5;
   margin: 0.8rem 0 0;
+}
+
+/* ============================================================
+ * 经典数独模式 + 模式切换
+ * ============================================================ */
+
+/* ---- 顶部 Tab ---- */
+.mode-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 0.8rem;
+}
+
+.mode-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.55rem;
+  border-radius: 9px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mode-tab.active {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* ---- 双面板左右滑动 ---- */
+.mode-viewport {
+  overflow: hidden;
+}
+
+.mode-slider {
+  display: flex;
+  align-items: flex-start;
+  width: 200%;
+  transform: translateX(-50%);
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mode-slider.classic {
+  transform: translateX(0);
+}
+
+.mode-panel {
+  flex: 0 0 50%;
+  width: 50%;
+  box-sizing: border-box;
+}
+
+/* ---- 经典模式标题栏 ---- */
+.classic-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.classic-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.classic-heading {
+  font-size: 1.25rem;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.difficulty-tag {
+  flex-shrink: 0;
+  border: none;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.difficulty-tag.easy {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.difficulty-tag.medium {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.difficulty-tag.hard {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.classic-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 经典模式功能按钮 ---- */
+.classic-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.classic-controls .btn {
+  padding: 0.6rem 0.4rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.btn#btnClassicNote.active {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+/* ---- 经典模式图标按钮状态 ---- */
+.icon-btn#btnClassicCheck .icon-check {
+  display: block;
+}
+
+.icon-btn#btnClassicCheck .icon-cross {
+  display: none;
+}
+
+.icon-btn#btnClassicCheck.error .icon-check,
+.icon-btn#btnClassicCheck.warn .icon-check {
+  display: none;
+}
+
+.icon-btn#btnClassicCheck.error .icon-cross,
+.icon-btn#btnClassicCheck.warn .icon-cross {
+  display: block;
+}
+
+.icon-btn#btnClassicNotes .icon-eye {
+  display: none;
+}
+
+.icon-btn#btnClassicNotes .icon-eye-off {
+  display: block;
+}
+
+.icon-btn#btnClassicNotes.active .icon-eye {
+  display: block;
+}
+
+.icon-btn#btnClassicNotes.active .icon-eye-off {
+  display: none;
+}
+
+.icon-btn#btnClassicNotes.active {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.icon-btn#btnClassicFav.active {
+  color: var(--star);
+  border-color: var(--star);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.icon-btn#btnClassicFav.active .star {
+  fill: currentColor;
+}
+
+/* ---- 数字条（1-9） ---- */
+.num-pad {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+  margin-bottom: 0.5rem;
+}
+
+.num-key {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.22rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 0.5rem 0 0.45rem;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.05s, border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+
+.num-key:active {
+  transform: translateY(1px);
+}
+
+.num-key .num-big {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.num-key .num-left {
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.num-key.disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+.smart-row {
+  margin-top: 0.6rem;
+}
+
+/* ---- 经典模式三级高亮（格子背景） ---- */
+.cell.peer {
+  background: var(--surface-2);
+}
+
+.cell.same-num {
+  background: var(--highlight);
+}
+
+.cell.selected {
+  background: var(--primary-soft);
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.cell.filled .cell-value {
+  color: var(--solved);
+}
+
+/* ---- 难度选择弹窗 ---- */
+.difficulty-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.difficulty-option {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  transition: transform 0.05s, border-color 0.15s;
+}
+
+.difficulty-option:active {
+  transform: translateY(1px);
+}
+
+.difficulty-option.easy {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.difficulty-option.medium {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.difficulty-option.hard {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+/* ---- 经典记录：难度标签 + 皇冠 ---- */
+.lib-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.lib-diff-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.lib-diff-tag.easy {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.lib-diff-tag.medium {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.lib-diff-tag.hard {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.lib-crown {
+  font-size: 0.85rem;
+  line-height: 1;
 }

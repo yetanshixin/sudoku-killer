@@ -139,6 +139,113 @@
     return 'r' + (r + 1) + 'c' + (c + 1);
   }
 
+  // ============ 数独生成器 ============
+
+  function randomInt(min, max) {
+    return min + Math.floor(Math.random() * (max - min + 1));
+  }
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function makeEmptyBoard() {
+    var b = [];
+    for (var r = 0; r < SIZE; r++) b.push([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    return b;
+  }
+
+  // 随机回溯填满一个完整解（从空盘开始，一定成功）
+  function fillBoard(board) {
+    var r = -1, c = -1;
+    for (var i = 0; i < SIZE && r === -1; i++) {
+      for (var j = 0; j < SIZE && r === -1; j++) {
+        if (board[i][j] === 0) { r = i; c = j; }
+      }
+    }
+    if (r === -1) return true;   // 已填满
+    var nums = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    for (var k = 0; k < nums.length; k++) {
+      if (isValid(board, r, c, nums[k])) {
+        board[r][c] = nums[k];
+        if (fillBoard(board)) return true;
+        board[r][c] = 0;
+      }
+    }
+    return false;
+  }
+
+  function generateSolution() {
+    var board = makeEmptyBoard();
+    fillBoard(board);
+    return board;
+  }
+
+  // 空白格中「裸单」（候选仅 1 个）占比，用于简单模式抽检难度
+  function nakedSingleRatio(board) {
+    var cand = computeCandidates(board);
+    var empty = 0, singles = 0;
+    for (var r = 0; r < SIZE; r++) {
+      for (var c = 0; c < SIZE; c++) {
+        if (board[r][c] === 0) {
+          empty++;
+          if (cand[r][c] && cand[r][c].length === 1) singles++;
+        }
+      }
+    }
+    return empty === 0 ? 0 : singles / empty;
+  }
+
+  // 按难度生成唯一解题目。difficulty: 'easy' | 'medium' | 'hard'
+  function generatePuzzle(difficulty) {
+    var solution = generateSolution();
+    var puzzle = clone(solution);
+    var cells = [];
+    for (var r = 0; r < SIZE; r++)
+      for (var c = 0; c < SIZE; c++)
+        cells.push([r, c]);
+
+    if (difficulty === 'hard') {
+      // 困难：minimal，循环移除直到每个给定数字都必要（去掉任意一个都会多解）
+      var changed = true;
+      while (changed) {
+        changed = false;
+        cells = shuffle(cells);
+        for (var i = 0; i < cells.length; i++) {
+          var hr = cells[i][0], hc = cells[i][1];
+          if (puzzle[hr][hc] === 0) continue;
+          var backup = puzzle[hr][hc];
+          puzzle[hr][hc] = 0;
+          if (countSolutions(puzzle, 2).count === 1) changed = true;
+          else puzzle[hr][hc] = backup;
+        }
+      }
+    } else {
+      // 简单/中等：按目标给定数挖洞，始终保持唯一解
+      var target = difficulty === 'easy' ? randomInt(36, 40) : randomInt(28, 32);
+      var toRemove = 81 - target;
+      var removed = 0;
+      cells = shuffle(cells);
+      for (var j = 0; j < cells.length && removed < toRemove; j++) {
+        var mr = cells[j][0], mc = cells[j][1];
+        var backup2 = puzzle[mr][mc];
+        puzzle[mr][mc] = 0;
+        if (countSolutions(puzzle, 2).count === 1) removed++;
+        else puzzle[mr][mc] = backup2;
+      }
+      // 简单模式：裸单占比过高说明太轻易，重新生成
+      if (difficulty === 'easy' && nakedSingleRatio(puzzle) > 0.6) {
+        return generatePuzzle(difficulty);
+      }
+    }
+    return { puzzle: puzzle, solution: solution };
+  }
+
   // ============ 逻辑求解器（模式二） ============
   function createLogicSolver(initialBoard, uniqueAssumption) {
     var initial = clone(initialBoard);
@@ -1452,6 +1559,7 @@
     isBoardValid: isBoardValid,
     countSolutions: countSolutions,
     computeCandidates: computeCandidates,
-    createLogicSolver: createLogicSolver
+    createLogicSolver: createLogicSolver,
+    generatePuzzle: generatePuzzle
   };
 })(window);
