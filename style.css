@@ -991,7 +991,6 @@ dialog::backdrop {
 
 /* ---- 通关统计 ---- */
 .classic-stats {
-  margin-top: 0.2rem;
   padding: 0.8rem 0.9rem;
   background: var(--surface);
   border: 1px solid var(--border);
