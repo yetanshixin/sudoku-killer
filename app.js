@@ -18,7 +18,7 @@
   var showPencil = false;      // 是否显示候选小数字（默认关闭）
 
   // ===== 经典数独模式状态 =====
-  var mode = 'solver';          // 'solver' | 'classic'
+  var mode = 'classic';         // 'classic' | 'solver'
   var classicBoard = emptyBoard();
   var classicSolution = null;
   var classicGivens = new Set();
@@ -1505,4 +1505,5 @@
   // 经典模式初始化
   buildNumPad();
   restoreClassicProgress();
+  switchMode('classic');   // 默认进入经典数独模式
 })();
