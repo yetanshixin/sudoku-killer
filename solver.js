@@ -201,6 +201,18 @@
     return empty === 0 ? 0 : singles / empty;
   }
 
+  // 判断题目能否被逻辑求解器（逐步推理）完整解出，无需试错
+  function isLogicSolvable(board) {
+    var solver = createLogicSolver(board, true);
+    var guard = 0;
+    while (guard++ < 81) {
+      var step = solver.nextStep();
+      if (!step) return false;      // 逻辑推不动，需要试错
+      if (step.done) return true;   // 完整解出
+    }
+    return false;
+  }
+
   // 按难度生成唯一解题目。difficulty: 'easy' | 'medium' | 'hard'
   function generatePuzzle(difficulty) {
     var solution = generateSolution();
@@ -221,7 +233,7 @@
           if (puzzle[hr][hc] === 0) continue;
           var backup = puzzle[hr][hc];
           puzzle[hr][hc] = 0;
-          if (countSolutions(puzzle, 2).count === 1) changed = true;
+          if (countSolutions(puzzle, 2).count === 1 && isLogicSolvable(puzzle)) changed = true;
           else puzzle[hr][hc] = backup;
         }
       }
@@ -235,7 +247,7 @@
         var mr = cells[j][0], mc = cells[j][1];
         var backup2 = puzzle[mr][mc];
         puzzle[mr][mc] = 0;
-        if (countSolutions(puzzle, 2).count === 1) removed++;
+        if (countSolutions(puzzle, 2).count === 1 && isLogicSolvable(puzzle)) removed++;
         else puzzle[mr][mc] = backup2;
       }
       // 简单模式：裸单占比过高说明太轻易，重新生成
