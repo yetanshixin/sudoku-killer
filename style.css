@@ -473,6 +473,7 @@ body {
 .btn-primary {
   background: linear-gradient(135deg, var(--primary), var(--primary-2));
   color: #fff;
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.32);
 }
 
 .btn-secondary {
@@ -801,6 +802,7 @@ dialog::backdrop {
   flex: 0 0 50%;
   width: 50%;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* ---- 经典模式标题栏 ---- */
@@ -984,6 +986,7 @@ dialog::backdrop {
 
 .smart-row {
   margin-top: 0.6rem;
+  padding-bottom: 1.5rem;
 }
 
 /* ---- 经典模式三级高亮（格子背景） ---- */
