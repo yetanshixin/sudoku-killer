@@ -257,7 +257,7 @@
       osc.stop(t0 + dur + 0.05);
     },
     key: function () {
-      this.tone(620, 0.06, 'triangle', 0.15);
+      this.tone(880, 0.08, 'triangle', 0.3);
     },
     clear: function () {
       var seq = [523.25, 659.25, 783.99, 1046.50];
@@ -271,6 +271,17 @@
       this.tone(150, 0.22, 'sawtooth', 0.12, 0.12);
     }
   };
+
+  // 预初始化 AudioContext：用户首次交互时创建并恢复，避免首次按键无声音
+  function initAudio() {
+    AudioFX.ensure();
+    document.removeEventListener('click', initAudio);
+    document.removeEventListener('touchstart', initAudio);
+    document.removeEventListener('keydown', initAudio);
+  }
+  document.addEventListener('click', initAudio);
+  document.addEventListener('touchstart', initAudio);
+  document.addEventListener('keydown', initAudio);
 
   function confetti() {
     var c = document.getElementById('confetti');
