@@ -23,7 +23,7 @@
   var classicSolution = null;
   var classicGivens = new Set();
   var classicNotes = [];        // 9x9，每格为 Set 或 null
-  var classicHistory = [];      // 撤销栈 [{r, c, prevVal}]
+  var classicHistory = [];      // 撤销栈：单格 {r,c,prevVal,prevNote} 或全部擦除 {type:'clearAll', cells}
   var classicDifficulty = 'medium';
   var classicSelected = null;   // {r, c}
   var classicNoteMode = false;
@@ -998,7 +998,7 @@
       if (note.has(n)) note.delete(n); else note.add(n);
     } else {
       if (classicBoard[r][c] !== n) {
-        classicHistory.push({ r: r, c: c, prevVal: classicBoard[r][c] });
+        classicHistory.push({ r: r, c: c, prevVal: classicBoard[r][c], prevNote: classicNotes[r][c] });
         classicBoard[r][c] = n;
         classicNotes[r][c] = null;
         saveClassicProgress();
@@ -1012,7 +1012,16 @@
     if (classicDone) return;
     if (classicHistory.length === 0) { showClassicStatus('warn', '没有可撤销的操作。'); return; }
     var op = classicHistory.pop();
-    classicBoard[op.r][op.c] = op.prevVal;
+    if (op.type === 'clearAll') {
+      for (var i = 0; i < op.cells.length; i++) {
+        var cell = op.cells[i];
+        classicBoard[cell.r][cell.c] = cell.val;
+        classicNotes[cell.r][cell.c] = cell.note;
+      }
+    } else {
+      classicBoard[op.r][op.c] = op.prevVal;
+      classicNotes[op.r][op.c] = op.prevNote;
+    }
     saveClassicProgress();
     renderClassicBoard();
   }
@@ -1022,10 +1031,10 @@
     if (!classicSelected) { showClassicStatus('warn', '请先选中一个格子。'); return; }
     var r = classicSelected.r, c = classicSelected.c;
     if (classicGivens.has(r + ',' + c)) { showClassicStatus('warn', '题目格不可修改。'); return; }
-    if (classicBoard[r][c] !== 0) {
-      classicHistory.push({ r: r, c: c, prevVal: classicBoard[r][c] });
-      classicBoard[r][c] = 0;
+    if (classicBoard[r][c] !== 0 || classicNotes[r][c]) {
+      classicHistory.push({ r: r, c: c, prevVal: classicBoard[r][c], prevNote: classicNotes[r][c] });
     }
+    classicBoard[r][c] = 0;
     classicNotes[r][c] = null;
     saveClassicProgress();
     renderClassicBoard();
@@ -1034,12 +1043,19 @@
   // 擦除所有用户填入的数字，还原到只剩题目
   function clearClassicFilled() {
     if (!classicGenerated || classicDone) return;
+    var cells = [];
     for (var r = 0; r < SIZE; r++)
-      for (var c = 0; c < SIZE; c++)
-        if (!classicGivens.has(r + ',' + c)) classicBoard[r][c] = 0;
-    classicNotes = [];
-    for (var r2 = 0; r2 < SIZE; r2++) classicNotes.push(new Array(SIZE).fill(null));
-    classicHistory = [];
+      for (var c = 0; c < SIZE; c++) {
+        if (classicGivens.has(r + ',' + c)) continue;
+        if (classicBoard[r][c] !== 0 || classicNotes[r][c]) {
+          cells.push({ r: r, c: c, val: classicBoard[r][c], note: classicNotes[r][c] });
+        }
+        classicBoard[r][c] = 0;
+        classicNotes[r][c] = null;
+      }
+    if (cells.length > 0) {
+      classicHistory.push({ type: 'clearAll', cells: cells });
+    }
     saveClassicProgress();
     renderClassicBoard();
     showClassicStatus('ok', '已清除所有填入数字。');
@@ -1139,7 +1155,7 @@
     recordClassicCleared();
     AudioFX.clear();   // 通关音效
     confetti();        // 通关飘带
-    showClassicStatus('ok', '恭喜通关！用时 ' + formatTime(classicSeconds) + '。');
+    showClassicStatus('ok', '恭喜通关！用时 ' + formatTime(classicSeconds) + '，点击左上角难度标签即可继续挑战。', true);
   }
 
   function recordClassicCleared() {
@@ -1187,13 +1203,15 @@
     if (classicTimerId) { clearInterval(classicTimerId); classicTimerId = null; }
   }
 
-  function showClassicStatus(kind, text) {
+  function showClassicStatus(kind, text, sticky) {
     classicStatusCard.hidden = false;
     classicStatusCard.className = 'status-card ' + kind;
     classicStatusIcon.textContent = kind === 'ok' ? '✓' : (kind === 'warn' ? '⚠' : '✗');
     classicStatusText.textContent = text;
-    if (classicStatusTimer) clearTimeout(classicStatusTimer);
-    classicStatusTimer = setTimeout(function () { classicStatusCard.hidden = true; }, 3000);
+    if (classicStatusTimer) { clearTimeout(classicStatusTimer); classicStatusTimer = null; }
+    if (!sticky) {
+      classicStatusTimer = setTimeout(function () { classicStatusCard.hidden = true; }, 3000);
+    }
   }
 
   function hasClassicFilled() {
