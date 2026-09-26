@@ -33,6 +33,7 @@
   var classicDone = false;
   var classicGenerated = false;
   var classicStatusTimer = null;
+  var prevClassicCheckKind = null;   // 上次唯一解检测结果，用于判断填错
   var libraryMode = 'solver';   // libraryDialog 当前数据源
 
   function emptyBoard() {
@@ -226,6 +227,72 @@
     document.body.removeChild(ta);
     if (ok) showStatus('ok', '已复制 81 位数字到剪贴板。');
     else showStatus('warn', '复制失败，请手动复制：' + text);
+  }
+
+  // ===== 音效与飘带 =====
+  var AudioFX = {
+    ctx: null,
+    ensure: function () {
+      if (!this.ctx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) this.ctx = new AC();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+      return this.ctx;
+    },
+    tone: function (freq, dur, type, vol, delay) {
+      var ctx = this.ensure();
+      if (!ctx) return;
+      var t0 = ctx.currentTime + (delay || 0);
+      var osc = ctx.createOscillator();
+      var g = ctx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol || 0.2, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.05);
+    },
+    key: function () {
+      this.tone(620, 0.06, 'triangle', 0.15);
+    },
+    clear: function () {
+      var seq = [523.25, 659.25, 783.99, 1046.50];
+      for (var i = 0; i < seq.length; i++) {
+        this.tone(seq[i], 0.18, 'triangle', 0.22, i * 0.12);
+      }
+      this.tone(130.81, 0.5, 'sine', 0.18, seq.length * 0.12);
+    },
+    error: function () {
+      this.tone(200, 0.16, 'sawtooth', 0.12);
+      this.tone(150, 0.22, 'sawtooth', 0.12, 0.12);
+    }
+  };
+
+  function confetti() {
+    var c = document.getElementById('confetti');
+    if (!c) return;
+    c.innerHTML = '';
+    c.hidden = false;
+    var colors = ['#f43f5e', '#f59e0b', '#10b981', '#3b82f6', '#a855f7', '#facc15', '#ec4899'];
+    for (var i = 0; i < 60; i++) {
+      var p = document.createElement('i');
+      p.style.left = (Math.random() * 100) + '%';
+      p.style.background = colors[i % colors.length];
+      p.style.animationDelay = (Math.random() * 0.6) + 's';
+      p.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+      p.style.width = (6 + Math.random() * 6) + 'px';
+      p.style.height = (10 + Math.random() * 8) + 'px';
+      p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      c.appendChild(p);
+    }
+    setTimeout(function () {
+      c.innerHTML = '';
+      c.hidden = true;
+    }, 4000);
   }
 
   // ===== 收藏状态 =====
@@ -1015,7 +1082,11 @@
 
   function updateClassicCheckButton() {
     if (!classicGenerated) { btnClassicCheck.className = 'icon-btn'; return; }
-    btnClassicCheck.className = 'icon-btn ' + getClassicCheckResult().kind;
+    var kind = getClassicCheckResult().kind;
+    btnClassicCheck.className = 'icon-btn ' + kind;
+    // 从唯一解变为无解 = 填错，播放填错音效
+    if (prevClassicCheckKind === 'ok' && kind === 'error') AudioFX.error();
+    prevClassicCheckKind = kind;
   }
 
   function handleClassicCheck() {
@@ -1066,6 +1137,8 @@
     classicDone = true;
     pauseClassicTimer();
     recordClassicCleared();
+    AudioFX.clear();   // 通关音效
+    confetti();        // 通关飘带
     showClassicStatus('ok', '恭喜通关！用时 ' + formatTime(classicSeconds) + '。');
   }
 
@@ -1326,6 +1399,11 @@
     tab.addEventListener('click', function () {
       switchMode(this.dataset.mode);
     });
+  });
+
+  // 按键音效：所有按钮点击
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('button')) AudioFX.key();
   });
 
   classicBoardEl.addEventListener('click', function (e) {

@@ -1049,6 +1049,29 @@ dialog::backdrop {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---- 通关飘带 ---- */
+.confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 9999;
+}
+
+.confetti i {
+  position: absolute;
+  top: -20px;
+  display: block;
+  animation: confetti-fall linear forwards;
+}
+
+@keyframes confetti-fall {
+  to {
+    transform: translateY(110vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
 /* ---- 经典模式三级高亮（格子背景） ---- */
 .cell.peer {
   background: var(--surface-2);
