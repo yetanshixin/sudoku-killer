@@ -950,8 +950,7 @@ dialog::backdrop {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   gap: 0.35rem;
-  margin-top: 0.7rem;
-  margin-bottom: 0.5rem;
+  margin-top: 0.6rem;
 }
 
 .num-key {
