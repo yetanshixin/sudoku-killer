@@ -628,6 +628,11 @@ dialog::backdrop {
   font-weight: 600;
   font-size: 0.92rem;
   color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lib-name-input {
@@ -638,9 +643,13 @@ dialog::backdrop {
   background: transparent;
   padding: 0;
   font-family: inherit;
-  width: 100%;
   outline: none;
   border-bottom: 1px dashed transparent;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lib-name-input:focus {
@@ -1135,6 +1144,7 @@ dialog::backdrop {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  min-width: 0;
 }
 
 .lib-diff-tag {
@@ -1144,6 +1154,7 @@ dialog::backdrop {
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .lib-diff-tag.easy {
@@ -1164,4 +1175,12 @@ dialog::backdrop {
 .lib-crown {
   font-size: 0.85rem;
   line-height: 1;
+  flex-shrink: 0;
+  width: 1.2em;
+  display: inline-block;
+  text-align: center;
+}
+
+.lib-crown.off {
+  visibility: hidden;
 }

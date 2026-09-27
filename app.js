@@ -563,7 +563,9 @@
     var nameHtml = lib === 'favorites'
       ? '<input class="lib-name-input" value="' + escapeHtml(it.name) + '" data-idx="' + i + '">'
       : '<span class="lib-name">' + escapeHtml(it.name) + '</span>';
-    var crown = it.cleared ? '<span class="lib-crown" title="已通关">👑</span>' : '';
+    var crown = it.cleared
+      ? '<span class="lib-crown" title="已通关">👑</span>'
+      : '<span class="lib-crown off"></span>';
     var meta;
     if (it.cleared) {
       meta = '耗时 ' + formatTime(it.bestTime);
